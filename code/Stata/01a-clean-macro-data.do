@@ -2,7 +2,7 @@
 
 //General 
 clear all
-run "code/Stata/00a_preamble.do"
+run "code/Stata/00a-preamble.do"
 
 //Table names
 local TOT 		"Table 4.1 Total Economy (S.1)"

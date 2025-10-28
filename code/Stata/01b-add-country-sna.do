@@ -2,7 +2,7 @@
 //Get information from detailed national accounts (country by country)
 
 clear all
-run "code/Stata/00a_preamble.do"
+run "code/Stata/00a-preamble.do"
 
 //0. General settings ----------------------------------------------------------
 

@@ -2,7 +2,7 @@
 Goal: Import and prepare Dominican tax data for combination with Survey
 *=============================================================================*/
 
-run "code/Stata/00a_preamble.do"
+run "code/Stata/00a-preamble.do"
 
 //General----------------------------------------------------------------------- 
 forvalues year = 2012/2020 {

@@ -49,15 +49,10 @@ forvalues year = 2016/2018 {
 	tempfile tab_`year'
 	qui save `tab_`year'', replace
 	
-	qui use "intermediary_data/microdata/raw/PER/PER_`year'_raw.dta", clear
-	
-	cap assert _N == 0
-	if _rc != 0 {
-	
-		qui sum _fep   
-		local totalpop = r(sum)
-	
-	}	
+	//get total population 
+	qui use "input_data/wid_population/pops.dta", clear 
+	qui sum npopul if country == "PER" & year == `year'
+	local totalpop = r(mean)
 	
 	qui use "`tab_`year''" , clear
 	

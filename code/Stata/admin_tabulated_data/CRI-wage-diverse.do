@@ -2,7 +2,7 @@
 
 //preliminary
 global aux_part  ""preliminary"" 
-quietly do "code/Stata/auxiliar/aux_general.do"
+run "code/Stata/00a-preamble.do"
 
 forvalues y = 2001(1)2016 {
 	

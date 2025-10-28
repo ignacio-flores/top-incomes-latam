@@ -82,17 +82,14 @@ forvalues year = 2000/2017 {
 		
 		tempfile tab_`year'_`var'
 		quietly save "`tab_`year'_`var''", replace
-		cap use "intermediary_data/microdata/raw/SLV/SLV_`year'_raw.dta", clear
 		
-		cap assert _N == 0
-		if _rc != 0 {
+		//get total population 
+		qui use "input_data/wid_population/pops.dta", clear 
+		qui sum npopul if country == "SLV" & year == `year'
+		local totalpop = r(mean)
 		
-			quietly sum _fep   
-			local totalpop = r(sum)
-		
-		}		
+			
 		qui use "`tab_`year'_`var''" , clear
-		
 		tempvar freq cumfreq 
 		
 		//Obtaining population totals, frequencies and cumulative frequencies

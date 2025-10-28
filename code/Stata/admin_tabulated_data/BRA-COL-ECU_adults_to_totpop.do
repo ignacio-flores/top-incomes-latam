@@ -5,17 +5,21 @@
 //0. Define directory
 clear all
 
-//preliminary 
-global aux_part  ""preliminary"" 
-qui do "code/Stata/auxiliar/aux_general.do"
-
 //define list of countries (for BRA, only pre 2007)
 local ctries " "BRA" "ECU" " // "COL"
 
+//
+qui use "input_data/wid_population/pops.dta", clear 
+qui gen pct_adults_ie = npopul_adults / npopul 
+qui rename npopul totpop
+qui keep country year totpop pct_adults_ie 
+qui keep if inlist(country, "BRA", "COL", "ECU")
+
+
 //open population data 
-qui use country year totpop pct_adults_ie if ///
-	inlist(country, "BRA", "COL", "ECU") using ///
-	"intermediary_data/population/SurveyPop.dta", clear 
+//qui use country year totpop pct_adults_ie if ///
+//	inlist(country, "BRA", "COL", "ECU") using ///
+//	"intermediary_data/population/SurveyPop.dta", clear 
 
 //store % of adults in memory 
 foreach c in `ctries' {

@@ -1,5 +1,5 @@
 
-run "code/Stata/00a_preamble.do"
+run "code/Stata/00a-preamble.do"
 
 // Download net national income figures (constant local currency) 
 qui wid, indicators(npopul) ///
@@ -22,4 +22,4 @@ qui drop *99?f *99?m
 
 //save 
 require_dir, path("input_data/wid_population")
-qui save "input_data/wid_population/pops.dta"
+qui save "input_data/wid_population/pops.dta", replace 
