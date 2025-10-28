@@ -59,7 +59,7 @@ forvalues y = 2014/`lasty_col_tax' {
 	qui gen pos_inc = pre_inc - (net_tax * 1000000) / n // promedio por bracket en millones de pesos
 	qui gen eff_tax_rate = (pre_inc-pos_inc) / pre_inc
 	
-	foreach v in /*pre*/ pos {
+	foreach v in pre pos {
 		cap drop __*
 	
 		tempvar F freq wy weight poptot inc_avg topavg 

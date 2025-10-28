@@ -68,7 +68,7 @@ forvalues year = 2000/2017 {
 		*/
 		qui drop tramo
 		//gen variables of interest
-		quietly gen totn_renta = tot_renta - impuesto
+		quietly gen totn_renta = tot_renta //- impuesto
 		quietly gen bracketavg = totn_renta/contrib
 		
 		qui gen year=`year' in 1
@@ -103,7 +103,7 @@ forvalues year = 2000/2017 {
 		qui sort bracketavg
 		qui sort p
 		
-		qui gen country="SLV" in 1
+		qui gen country = "SLV" in 1
 		qui replace average = totalnetinc / totalpop
 		
 		qui order year country totalpop average p thr bracketavg
@@ -119,7 +119,7 @@ forvalues year = 2000/2017 {
 		}	
 		
 		cap export excel ///
-		"input_data/admin_data/SLV/_clean/`inc'-SLV.xlsx", ///
+		"input_data/admin_data/SLV/_clean/`inc'-pre-SLV.xlsx", ///
 			sheet("`year'", replace) firstrow(variables) keepcellfmt 
 	}
 	}

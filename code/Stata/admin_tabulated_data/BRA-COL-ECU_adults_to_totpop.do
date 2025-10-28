@@ -8,18 +8,13 @@ clear all
 //define list of countries (for BRA, only pre 2007)
 local ctries " "BRA" "ECU" " // "COL"
 
-//
+//open population data 
 qui use "input_data/wid_population/pops.dta", clear 
 qui gen pct_adults_ie = npopul_adults / npopul 
 qui rename npopul totpop
 qui keep country year totpop pct_adults_ie 
 qui keep if inlist(country, "BRA", "COL", "ECU")
 
-
-//open population data 
-//qui use country year totpop pct_adults_ie if ///
-//	inlist(country, "BRA", "COL", "ECU") using ///
-//	"intermediary_data/population/SurveyPop.dta", clear 
 
 //store % of adults in memory 
 foreach c in `ctries' {
@@ -79,7 +74,7 @@ foreach c in `ctries' {
 				qui export excel "input_data/admin_data/BRA/ptot_`t'.xlsx", ///
 				firstrow(variables) replace	
 			} 
-			if inlist("`c'", "COL", "ECU") {
+			if inlist("`c'", "ECU") {
 				
 				// Create directory if it doesnt exist 
 				local dirpath "input_data/admin_data/`c'/_clean"
@@ -89,7 +84,8 @@ foreach c in `ctries' {
 					display "Created directory: `dirpath'"
 				}	
 				
-				qui export excel "input_data/admin_data/`c'/_clean/total-pos-`c'.xlsx", ///
+				qui export excel ///
+				"input_data/admin_data/`c'/_clean/total-pre-`c'.xlsx", ///
 				firstrow(variables) sheet("`t'", replace)	
 			}
 		}
