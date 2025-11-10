@@ -5,9 +5,8 @@ global areas_wid_latam  ///
 		" "AR" "BR" "CL" "CO" "CR" "DO" "EC" "MX" "PE" "SV" "UY" "
 
 //define varlist
-global widvars mnninc mgdpro mnnfin mptfrr mptfrp inyixx ///
-	mccshn mccmhn mcfcco mconfc mptfhr mgsmhn mgsrhn mgmxhn mprgco agninc
-clear //npopul 
+
+global widvars mprgho mssbgo mssbfc msscho inyixx, clear 
 
 // Download net national income figures (constant local currency) 
 qui wid, indicators(${widvars}) areas(${areas_wid_latam}) ages(999 992) clear

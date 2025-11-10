@@ -18,7 +18,7 @@ local NPISH 	"Table 4.7- Non-profit institutions serving households (S.15)"
 local corps 	" Non-Financial and Financial Corporations (S.11 + S.12)"
 local CORPS 	"Table 4.8- Combined Sectors-`corps'"
 local HH_NPISH 	"Table 4.9- Combined Sectors- Households and NPISH (S.14 + S.15)"
-local all_IS 	"TOT HH NPISH HH_NPISH" //"TOT RoW NFC FC GG HH NPISH CORPS HH_NPISH"
+local all_IS 	"TOT HH GG FC NPISH HH_NPISH" //"TOT RoW NFC FC GG HH NPISH CORPS HH_NPISH"
 
 //1. PREPARE AND CLEAN DATA -------------------------------------------------//
 
