@@ -107,4 +107,4 @@ qui merge 1:m iso using `last', keep(match) nogenerate
 //cosmetics and save 	
 order iso_long iso series year
 sort iso series year 	
-qui save "intermediary_data/national_accounts/sna-wid.dta", replace 	
+qui save "output/national_accounts/sna-wid.dta", replace 	

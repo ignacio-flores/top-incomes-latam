@@ -472,5 +472,5 @@ foreach var in $list_ratios {
 qui replace B2g_cei = . if country == "ECU" & year <= 2017
 
 //save
-qui save "intermediary_data/national_accounts/sna-cei.dta" , replace  
+qui save "output/national_accounts/sna-cei.dta" , replace  
 

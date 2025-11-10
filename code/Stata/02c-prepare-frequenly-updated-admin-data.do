@@ -5,13 +5,13 @@ local list_noquotes : subinstr global all_countries `"""' "" , all
 //CHL 
 di as txt "Using R to clean chilean admin data..."
 if strpos("`list_noquotes'", "CHL") > 0 {
-	rcall: source("code/R/01a_clean_admin_chl.R")
+	rcall: source("code/R/02a_clean_admin_chl.R")
 } 
 
 //BRA
 di as txt "Using R to clean brazilian admin data..."
 if strpos("`list_noquotes'", "BRA") > 0 {
-	rcall: source("code/R/01b_clean_admin_bra.R")
+	rcall: source("code/R/02b_clean_admin_bra.R")
 }
 
 //COL
