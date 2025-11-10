@@ -34,8 +34,8 @@ table_names <- c(
   "Table 4.5- General Government (S.13)",
   "Table 4.6- Households (S.14)",
   "Table 4.7- Non-profit institutions serving households (S.15)",
-  "Table 4.8- Combined Sectors: Non-Financial and Financial Corporations (S.11 + S.12)",
-  "Table 4.9- Combined Sectors: Households and NPISH (S.14 + S.15)",
+  "Table 4.8- Combined Sectors- Non-Financial and Financial Corporations (S.11 + S.12)",
+  "Table 4.9- Combined Sectors- Households and NPISH (S.14 + S.15)",
   "Table 5.1- Cross classification of Gross value added by industries and institutional sectors (ISIC Rev. 3)",
   "Table 5.2- Cross classification of Gross value added by industries and institutional sectors (ISIC Rev. 4)"
 )

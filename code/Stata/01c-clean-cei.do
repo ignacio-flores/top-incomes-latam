@@ -468,21 +468,9 @@ foreach var in $list_ratios {
 
 }
 
-*save to merge 
-tempfile savetomerge 
-qui rename country _ISO3C_ 
-qui save `savetomerge', replace 
-
-*open SNA file 
-qui use "intermediary_data/national_accounts/sna-un-wid.dta", clear 
-
-*merge with SNA data
-qui merge m:1 _ISO3C_ year using `savetomerge' , nogen update replace
-
 //ignore aggregated data for ECU (OS + MI)
 qui replace B2g_cei = . if country == "ECU" & year <= 2017
-qui replace HH_B2g_R = . if country == "ECU" & year <= 2017
 
 //save
-qui save "intermediary_data/national_accounts/sna-un-wid-cei.dta" , replace  
+qui save "intermediary_data/national_accounts/sna-cei.dta" , replace  
 
