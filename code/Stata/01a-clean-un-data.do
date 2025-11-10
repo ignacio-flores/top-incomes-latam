@@ -4,7 +4,7 @@
 clear all
 run "code/Stata/00a-preamble.do"
 
-
+rcall: source("code/R/01a_clean_unsna.R")
 
 
 //Table names
@@ -107,7 +107,9 @@ foreach cod in "D4" "B2g" "B5g" "D5" {
 	}
 }
 
+require_dir, path("output/national_accounts") 
+
 //Save
 tempfile tf_main 
-qui save "intermediary_data/national_accounts/sna-un.dta", replace 
+qui save "output/national_accounts/sna-un.dta", replace 
 

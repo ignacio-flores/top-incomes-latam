@@ -84,7 +84,6 @@ qui la var sh_cfc_total ///
 	"Total Consumption of fixed capital (% of Gross National Income)"		
 
 //harmonize country names
-qui rename (_ISO3C_ GEO) (iso3c geo)
 qui kountry iso, from(iso2c) to(iso3c) geo(undet)
 
 //Save
@@ -105,6 +104,6 @@ drop stub2 name
 qui merge 1:m iso using `last', keep(match) nogenerate
 
 //cosmetics and save 	
-order iso_long iso series year
-sort iso series year 	
+order iso_long iso year
+sort iso year 	
 qui save "output/national_accounts/sna-wid.dta", replace 	
