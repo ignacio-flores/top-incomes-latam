@@ -1,10 +1,11 @@
 //0. PRELIMINARY ------------------------------------------------------------//
 
-call: source("code/R/01a_clean_unsna.R")
-
 //General 
 clear all
 run "code/Stata/00a-preamble.do"
+
+
+
 
 //Table names
 local TOT 		"Table 4.1- Total Economy (S.1)"
@@ -107,6 +108,6 @@ foreach cod in "D4" "B2g" "B5g" "D5" {
 }
 
 //Save
-require_dir, path("output/national_accounts")
-qui save "output/national_accounts/sna-un.dta", replace 
+tempfile tf_main 
+qui save "intermediary_data/national_accounts/sna-un.dta", replace 
 
