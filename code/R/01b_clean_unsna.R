@@ -50,17 +50,21 @@ table_codes <- c(
 )
 
 un_tables <- lapply(table_codes, function(code) {
-  table <- read_csv(file.path(
-    "input_data",
-    "sna_UNDATA",
-    glue("{code}.csv.gz")
+  # table <- read_csv(file.path(
+  #   "input_data",
+  #   "sna_UNDATA",
+  #   glue("{code}.csv.gz")
+  # ))
+  table <- read_dta(file.path(
+    "input_data/sna_UNDATA/raw/",
+    glue("{code}.dta")
   ))
   table <- clean_names(table)
   
   # Datasets in constant currency use "Fiscal Year" instead of year: we
   # change that to harmonize names between datasets
   if ("fiscal_year" %in% colnames(table)) {
-    table %<>% rename(year = fiscal_year)
+    table %<>% dplyr::rename(year = fiscal_year)
   }
   
   return(table)
@@ -71,7 +75,7 @@ iso_dict <- read_excel("input_data/sna_UNDATA/iso/iso-codes-dict.xlsx", sheet = 
 
 un_tables %<>% llply(function(table) {
   table %<>%
-    rename(country = country_or_area) %>%
+    dplyr::rename(country = country_or_area) %>%
     left_join(iso_dict)
   
   table %<>% filter(!is.na(iso)) 

@@ -1,4 +1,5 @@
 input_data/sna_UNDATA/_clean/Table*
+input_data/sna_UNDATA/raw/
 .DS_Store
 .Rhistory
 

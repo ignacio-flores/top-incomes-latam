@@ -9,6 +9,9 @@ library(glue)
 library(haven)
 library(janitor)
 
+if(!dir.exists("input_data/sna_UNDATA")) dir.create("input_data/sna_UNDATA")
+if(!dir.exists("input_data/sna_UNDATA/raw")) dir.create("input_data/sna_UNDATA/raw")
+
 # List of table names on the UN website
 table_names <- c(
   "Table 1.1: Gross domestic product by expenditures at current prices",
@@ -156,7 +159,7 @@ for (i in 1:n_tables) {
     cat("DONE\n")
   }
   table <- clean_names(table, case = "snake")
-  write_dta(table, glue("{code}.dta"))
+  write_dta(table, paste0("input_data/sna_UNDATA/raw/", code, ".dta"))
 }
 
 
