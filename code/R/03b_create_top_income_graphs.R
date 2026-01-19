@@ -12,7 +12,13 @@ suppressPackageStartupMessages({
   library(stringr)
   library(ggplot2)
   library(scales)
+  library(showtext)
+  library(sysfonts)
 })
+
+
+font_add_google("EB Garamond", "garamond")
+showtext_auto()
 
 ###############################################
 # 1. PATHS (edit as needed)
@@ -101,49 +107,113 @@ country_palette <- c(
   "SLV" = "#C2185B"   # El Salvador - dark pink
 )
 
+###############################################
+# 4A. DATA (Top 10% = p 0.90) — ONLY REAL DATA
+###############################################
 
-# --- Filter to top 10% ---
-plot_df_top10 <- top_income_df %>%
-  filter(p == 0.9999) %>%
+plot_df <- top_income_df %>%
+  filter(p == 0.90) %>%
   filter(country %in% names(country_palette)) %>%
+  filter(!is.na(top_share)) %>%
+  select(country, year, top_share) %>%
   arrange(country, year)
 
-# --- Plot ---
-p_top10 <- ggplot(plot_df_top10, aes(x = year, y = top_share, color = country, group = country)) +
-  geom_line(linewidth = 0.9, alpha = 0.95) +
-  geom_point(size = 2.2, stroke = 0.25) +  # filled points for observed years
-  scale_color_manual(values = country_palette, breaks = names(country_palette)) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  scale_x_continuous(breaks = pretty_breaks(n = 7)) +
+# keep a stable ordering (palette order, but only those present)
+countries_in_data <- intersect(names(country_palette), unique(plot_df$country))
+
+plot_df <- plot_df %>%
+  mutate(country = factor(country, levels = countries_in_data))
+
+country_labels <- c(
+  "MEX" = "Mexico",
+  "COL" = "Colombia",
+  "CHL" = "Chile",
+  "ARG" = "Argentina",
+  "BRA" = "Brazil",
+  "URY" = "Uruguay",
+  "ECU" = "Ecuador",
+  "PER" = "Peru",
+  "DOM" = "Dominican Republic",
+  "CRI" = "Costa Rica",
+  "SLV" = "El Salvador"
+)
+
+country_palette_used <- country_palette[countries_in_data]
+country_labels_used  <- country_labels[countries_in_data]
+
+
+###############################################
+# 4B. PLOT — WHITE + DOTTED MAJOR GRID (JOURNAL)
+###############################################
+p_top10 <- ggplot(
+  plot_df,
+  aes(x = year, y = top_share, color = country, group = country)
+) +
+  # --- LINES: black underlay + color ---
+  geom_line(color = "black", linewidth = 1.8) +   # underlay
+  geom_line(linewidth = 1.05) +                   # colored line
+  
+  # --- POINTS: black underlay + color ---
+  geom_point(color = "black", size = 3.2, stroke = 0.9) +  # underlay
+  geom_point(size = 2.6, stroke = 0.6) +                  # colored point
+  
+  scale_color_manual(
+    values = country_palette_used,
+    labels = country_labels_used
+  ) +
+  
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = scales::pretty_breaks(n = 5),
+    minor_breaks = NULL,
+    expand = expansion(mult = c(0.02, 0.04))
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(n = 7),
+    minor_breaks = NULL,
+    expand = expansion(mult = c(0.01, 0.02))
+  ) +
+  
   labs(
-    title = "Top 10% income share",
-    subtitle = "All available countries",
-    x = NULL,
-    y = NULL,
+    x = "Year",          # <-- set axis title text here
+    y = "Top 10% Share",  # <-- set axis title text here
     color = NULL
   ) +
-  theme_minimal(base_family = "Garamond") +
+  
+  theme_classic(base_family = "garamond", base_size = 16) +
+  
   theme(
-    # Gridlines: light grey + spaced feel
-    panel.grid.major = element_line(color = "grey85", linewidth = 0.4),
-    panel.grid.minor = element_line(color = "grey92", linewidth = 0.25),
+    # White backgrounds
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background  = element_rect(fill = "white", color = NA),
     
-    # Axis text
-    axis.text = element_text(size = 11, color = "grey20"),
+    # Dotted major grid only
+    panel.grid.major = element_line(color = "grey65",
+                                    linewidth = 0.45,
+                                    linetype = "dotted"),
+    panel.grid.minor = element_blank(),
     
-    # Titles
-    plot.title = element_text(size = 16, face = "bold", color = "grey10"),
-    plot.subtitle = element_text(size = 12, color = "grey25"),
+    # ---- AXIS TEXT SIZE CONTROLS ----
+    axis.text.x  = element_text(size = 22),  # X tick labels
+    axis.text.y  = element_text(size = 22),  # Y tick labels
     
-    # Legend styling
+    axis.title.x = element_text(size = 24),  # X title
+    axis.title.y = element_text(size = 24),  # Y title
+    
+    axis.line  = element_line(color = "black", linewidth = 0.6),
+    axis.ticks = element_line(color = "black", linewidth = 0.45),
+    
+    # ---- LEGEND TEXT SIZE ----
     legend.position = "bottom",
-    legend.text = element_text(size = 11, color = "grey15"),
-    legend.key.width = unit(18, "pt"),
+    legend.text = element_text(size = 24, family = "garamond"),
+    legend.key = element_rect(fill = "white", color = NA),
+    legend.background = element_blank(),
     
-    # Clean background
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA)
-  )
+    plot.margin = margin(8, 8, 8, 8)
+  ) +
+  
+  guides(color = guide_legend(nrow = 2, byrow = TRUE))
 
 p_top10
+
 
