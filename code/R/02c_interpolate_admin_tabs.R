@@ -54,7 +54,7 @@ countries2 <- rbind(arg_tabs, cri_tabs, mex_tabs) %>%
   rename(avg = `bracketavg`)
 
 #keep two versions 
-all <- rbind(countries1, countries2)
+all <- rbind(countries1, countries2) %>% mutate(p = round(p, 5)) 
 sel <- all %>% filter(p %in% c(0.9, 0.99, 0.999, 0.9999))
 
 #make room 
