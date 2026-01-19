@@ -4,7 +4,7 @@
 
 local list_noquotes : subinstr global all_countries `"""' "" , all
 
-foreach dofile in "MEX-wages" "URY-gperc" { 
+foreach dofile in "MEX-totinc" "URY-gperc" /*CRI*/ { 
 	local sub = substr("`dofile'", 1, 3)
 	if strpos("`list_noquotes'", "`sub'") > 0 {
 		//run
