@@ -10,6 +10,8 @@ suppressPackageStartupMessages({
   library(haven)
   library(dplyr)
   library(tidyr)
+  library(writexl)
+  
 })
 
 ###############################################
@@ -177,3 +179,24 @@ rm(
 )
 
 
+###############################################
+# 6. SAVE INTERMEDIATE OUTPUT (CSV)
+###############################################
+
+# Folder for intermediate data
+PATH_INTERMEDIATE <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediate_data"
+
+# Create folder if it doesn't exist
+if (!dir.exists(PATH_INTERMEDIATE)) {
+  dir.create(PATH_INTERMEDIATE, recursive = TRUE)
+}
+
+# Save CSVs
+write_csv(top_income_df,
+          file.path(PATH_INTERMEDIATE, "top_income_df.csv"))
+
+write_csv(availability_check,
+          file.path(PATH_INTERMEDIATE, "availability_check.csv"))
+
+write_csv(availability_survive,
+          file.path(PATH_INTERMEDIATE, "availability_survive.csv"))
