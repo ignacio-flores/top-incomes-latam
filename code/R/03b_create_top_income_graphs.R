@@ -24,7 +24,7 @@ showtext_auto()
 # 1. PATHS (edit as needed)
 ###############################################
 
-PATH_INTERMEDIATE <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediate_data"
+PATH_INTERMEDIATE <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediary_data"
 
 PATH_TOP_INCOME_DF <- file.path(PATH_INTERMEDIATE, "top_income_df.csv")
 # Optional (diagnostics from previous script)
@@ -101,9 +101,9 @@ country_palette <- c(
   "BRA" = "#66C266",  # Brazil - light green
   "URY" = "#003366",  # Uruguay - dark blue
   "ECU" = "#F1C40F",  # Ecuador - light yellow
-  "PER" = "#C65D3A",  # Peru - terracotta / brick (FIXED)
+  "PER" = "#FF7F0E",  # Peru - terracotta / brick (FIXED)
   "DOM" = "#F5B7B1",  # Dominican Republic - light pink
-  "CRI" = "#000000",  # Costa Rica - black
+  "CRI" = "#7A7A7A",  # Costa Rica - black
   "SLV" = "#C2185B"   # El Salvador - dark pink
 )
 
@@ -112,7 +112,8 @@ country_palette <- c(
 ###############################################
 
 plot_df <- top_income_df %>%
-  filter(p == 0.90) %>%
+  filter(p == 0.99) %>%
+  filter(denom_source == "BFM") %>%
   filter(country %in% names(country_palette)) %>%
   filter(!is.na(top_share)) %>%
   select(country, year, top_share) %>%
@@ -149,13 +150,14 @@ p_top10 <- ggplot(
   plot_df,
   aes(x = year, y = top_share, color = country, group = country)
 ) +
-  # --- LINES: black underlay + color ---
-  geom_line(color = "black", linewidth = 1.8) +   # underlay
-  geom_line(linewidth = 1.05) +                   # colored line
+  # --- LINES: black underlay + color (tiny bit smaller) ---
+  geom_line(color = "black", linewidth = 1.25) +   # underlay
+  geom_line(linewidth = 0.70) +                    # colored line
   
-  # --- POINTS: black underlay + color ---
-  geom_point(color = "black", size = 3.2, stroke = 0.9) +  # underlay
-  geom_point(size = 2.6, stroke = 0.6) +                  # colored point
+  # --- POINTS: black underlay + color (tiny bit smaller) ---
+  geom_point(color = "black", size = 3.2, stroke = 0.55) +  # underlay
+  geom_point(size = 2.65, stroke = 0.20) +                  # colored point
+  
   
   scale_color_manual(
     values = country_palette_used,

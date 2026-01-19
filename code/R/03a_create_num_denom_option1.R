@@ -19,7 +19,8 @@ suppressPackageStartupMessages({
 ###############################################
 
 PATH_NUMERATOR <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/gpinter/selected.csv"
-PATH_DENOMINATOR <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/national_accounts/sna-cei.dta"
+PATH_DENOMINATOR1 <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/national_accounts/sna-cei.dta"
+PATH_DENOMINATOR2 <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediary_data/dfm_totals/dfm_denominator.csv"
 PATH_POPS <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/input_data/wid_population/pops.dta"
 
 ###############################################
@@ -36,24 +37,38 @@ numerator <- numerator_raw %>%
 # 2. LOAD & PREPARE DENOMINATOR (SNA–CEI)
 ###############################################
 
-denominator_raw <- read_dta(PATH_DENOMINATOR)
+denominator_raw1 <- read_dta(PATH_DENOMINATOR1)
+denominator_raw2 <- read_csv(PATH_DENOMINATOR2 , show_col_types = FALSE)
+
 
 # ------------------------------------------------------
-# CONCEPT 1 — SIMPLE DENOMINATOR (B5g only)
+# CONCEPT 1 — SIMPLE DENOMINATOR (B5g only) HAVE TO SUBTRACT CAPDEP
 # ------------------------------------------------------
 
-denom_simple <- denominator_raw %>%
+denom_simple <- denominator_raw1 %>%
   select(country, year, TOT_B5g_cei) %>%
   rename(denom_total = TOT_B5g_cei) %>%
   mutate(
     denom_concept = "B5g_simple",
     denom_source  = "SNA_CEI"
   )
+# ------------------------------------------------------
+# CONCEPT 2 — bfm DENOMINATOR 
+# ------------------------------------------------------
+
+denom_bfm <- denominator_raw2 %>%
+  select(country, year, bfm_totinc) %>%
+  rename(denom_total = bfm_totinc) %>%
+  mutate(
+    denom_concept = "bfm_totinc",
+    denom_source  = "BFM"
+  )
+
 
 # ------------------------------------------------------
 # CONCEPT 2 — COMPOSITE DENOMINATOR (PLACEHOLDER)
 # ------------------------------------------------------
-# denom_composite <- denominator_raw %>%
+# denom_dfm <- denominator_raw2 %>%
 #   select(country, year,
 #          TOT_B5g_cei,
 #          UN_component1,
@@ -75,8 +90,7 @@ denom_simple <- denominator_raw %>%
 # ------------------------------------------------------
 
 denominator <- bind_rows(
-  denom_simple
-  # , denom_composite
+  denom_simple, denom_bfm
 )
 
 ###############################################
@@ -184,7 +198,7 @@ rm(
 ###############################################
 
 # Folder for intermediate data
-PATH_INTERMEDIATE <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediate_data"
+PATH_INTERMEDIATE <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediary_data"
 
 # Create folder if it doesn't exist
 if (!dir.exists(PATH_INTERMEDIATE)) {
