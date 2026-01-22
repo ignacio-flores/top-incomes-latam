@@ -22,23 +22,23 @@ mode <- "local" #update
 #bring total pop 
 #popdata <- read_dta("intermediary_data/population/SurveyPop.dta")
 popdata <- read_dta("input_data/wid_population/pops.dta") %>%
-  select(country, year, npopul) %>%
+  select(country, year, npopul_adults) %>%
   filter(country == "BRA" & year >= 1950) %>%
-  rename(totpop_ie = `npopul`)
+  rename(totpop_ie = `npopul_adults`)
 
 # I. BRAZIL------------------------
 
 #arrange estimates before 2007 
 bra_file <- "input_data/admin_data/BRA/"
 bra_tabs_2000_06 <- NULL
-for(t in 2000:2007) {
-  excel_file <- file.path(bra_file, glue("ptot_", t, ".xlsx"))
+for(t in c('2000', '2002', '2006')) {
+  excel_file <- file.path(bra_file, glue("padu_2000-2002-2006.xlsx"))
   if(file.exists(excel_file)){
-    content <- read_excel(excel_file)
+    content <- read_excel(excel_file, sheet = glue(t))
     bra_tabs_2000_06 %<>% bind_rows(content)
-  } 
+  }
 }
-bra_tabs_2000_06 %<>% rename(popsize = `population`) %>% 
+bra_tabs_2000_06 %<>% rename(popsize = `population`) %>%
   mutate(component = "pretax")
 
 #download more recent (post 2007)? 
@@ -92,7 +92,7 @@ if (!dir.exists(bra_clean)) {
 } 
 
 #Order as gpinter input
-xlsx_file <- "input_data/admin_data/BRA/_clean/total-pre-BRA.xlsx"
+xlsx_file <- "input_data/admin_data/BRA/_clean/total-pre-BRA-adults.xlsx"
 if(file.exists(xlsx_file)) file.remove(xlsx_file)
 for(x in 1:length(bra_tab_years)) {
   exptab <- select(ungroup(bra_tabs), year, country, component, popsize, average, p ,thr, bracketavg) %>% 
@@ -115,6 +115,5 @@ for(x in 1:length(bra_tab_years)) {
     append=TRUE)
 }
 
-#Apply gpinter (manually)
 
 

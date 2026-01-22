@@ -15,9 +15,9 @@ suppressMessages(suppressPackageStartupMessages({
 
 #bring total pop 
 popdata <- read_dta("input_data/wid_population/pops.dta") %>% 
-  select(country, year, npopul) %>% 
+  select(country, year, npopul_adults) %>% 
   filter(country == "CHL" & year >= 1950) %>% 
-  rename(totpop_ie = `npopul`)
+  rename(totpop_ie = `npopul_adults`)
 #popdata <- read_dta("intermediary_data/population/SurveyPop.dta")
 
 # II.2 Chile.............
@@ -215,7 +215,7 @@ if (!dir.exists(folder_path)) {
   dir.create(folder_path, recursive = TRUE)
   message("Folder created: ", folder_path)
 } 
-xlsx_file <- "input_data/admin_data/CHL/_clean/total-pre-CHL.xlsx"
+xlsx_file <- "input_data/admin_data/CHL/_clean/total-pre-CHL-adults.xlsx"
 if(file.exists(xlsx_file)) file.remove(xlsx_file)
 for(x in 1:length(chl_tab_years)) {
   exptab <- select(ungroup(chl_tabs), year, country, component_pre, popsize, p ,thr, bracketavg_pre) %>% 
@@ -238,7 +238,7 @@ for(x in 1:length(chl_tab_years)) {
 }
 
 #Order as gpinter input (postax)
-xlsx_file <- "input_data/admin_data/CHL/_clean/total-pos-CHL.xlsx"
+xlsx_file <- "input_data/admin_data/CHL/_clean/total-pos-CHL-adults.xlsx"
 if(file.exists(xlsx_file)) file.remove(xlsx_file)
 for(x in 1:length(chl_tab_years)) {
   exptab <- select(ungroup(chl_tabs), year, country, component_pos, popsize, p ,thr, bracketavg_pos) %>% 
