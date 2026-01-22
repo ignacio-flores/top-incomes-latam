@@ -85,7 +85,7 @@ forvalues year = 2000/2017 {
 		
 		//get total population 
 		qui use "input_data/wid_population/pops.dta", clear 
-		qui sum npopul if country == "SLV" & year == `year'
+		qui sum npopul_adults if country == "SLV" & year == `year'
 		local totalpop = r(mean)
 		
 			
@@ -119,7 +119,7 @@ forvalues year = 2000/2017 {
 		}	
 		
 		cap export excel ///
-		"input_data/admin_data/SLV/_clean/`inc'-pre-SLV.xlsx", ///
+		"input_data/admin_data/SLV/_clean/`inc'-pre-SLV-adults.xlsx", ///
 			sheet("`year'", replace) firstrow(variables) keepcellfmt 
 	}
 	}

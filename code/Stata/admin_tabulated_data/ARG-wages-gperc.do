@@ -14,30 +14,30 @@ qui rename (npopul npopul_adults) (totalpop adultpop)
 
 mkmat year totalpop adultpop, matrix(_mat_sum)
 
-scalar totalpop1996=_mat_sum[1, 2]
-scalar totalpop1997=_mat_sum[2, 2]
-scalar totalpop1998=_mat_sum[3, 2]
-scalar totalpop1999=_mat_sum[4, 2]
-scalar totalpop2000=_mat_sum[5, 2]
-scalar totalpop2001=_mat_sum[6, 2]
-scalar totalpop2002=_mat_sum[7, 2]	
-scalar totalpop2003=_mat_sum[8, 2]
-scalar totalpop2004=_mat_sum[9, 2]
-scalar totalpop2005=_mat_sum[10, 2]
-scalar totalpop2006=_mat_sum[11, 2]
-scalar totalpop2007=_mat_sum[12, 2]
-scalar totalpop2008=_mat_sum[13, 2]
-scalar totalpop2009=_mat_sum[14, 2]
-scalar totalpop2010=_mat_sum[15, 2]
-scalar totalpop2011=_mat_sum[16, 2]
-scalar totalpop2012=_mat_sum[17, 2]
-scalar totalpop2013=_mat_sum[18, 2]
-scalar totalpop2014=_mat_sum[19, 2]
-scalar totalpop2015=_mat_sum[20, 2]
-scalar totalpop2016=_mat_sum[21, 2]
-scalar totalpop2017=_mat_sum[22, 2]
-scalar totalpop2018=_mat_sum[23, 2]
-scalar totalpop2019=_mat_sum[24, 2]
+scalar totalpop1996=_mat_sum[1, 3]
+scalar totalpop1997=_mat_sum[2, 3]
+scalar totalpop1998=_mat_sum[3, 3]
+scalar totalpop1999=_mat_sum[4, 3]
+scalar totalpop2000=_mat_sum[5, 3]
+scalar totalpop2001=_mat_sum[6, 3]
+scalar totalpop2002=_mat_sum[7, 3]	
+scalar totalpop2003=_mat_sum[8, 3]
+scalar totalpop2004=_mat_sum[9, 3]
+scalar totalpop2005=_mat_sum[10, 3]
+scalar totalpop2006=_mat_sum[11, 3]
+scalar totalpop2007=_mat_sum[12, 3]
+scalar totalpop2008=_mat_sum[13, 3]
+scalar totalpop2009=_mat_sum[14, 3]
+scalar totalpop2010=_mat_sum[15, 3]
+scalar totalpop2011=_mat_sum[16, 3]
+scalar totalpop2012=_mat_sum[17, 3]
+scalar totalpop2013=_mat_sum[18, 3]
+scalar totalpop2014=_mat_sum[19, 3]
+scalar totalpop2015=_mat_sum[20, 3]
+scalar totalpop2016=_mat_sum[21, 3]
+scalar totalpop2017=_mat_sum[22, 3]
+scalar totalpop2018=_mat_sum[23, 3]
+scalar totalpop2019=_mat_sum[24, 3]
 
 // Estimate Distribution and Export
 
@@ -163,7 +163,7 @@ forvalues t = 1996/2015 {
 		quietly count if (thr[_n] >= thr[_n + 1])
 	}
 	
-	export excel using "input_data/admin_data/ARG/wage_ARG_`t'.xlsx", /// 
+	export excel using "input_data/admin_data/ARG/wage_ARG_`t'_adults.xlsx", /// 
 		firstrow(variables) keepcellfmt replace
 }
 

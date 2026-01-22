@@ -51,7 +51,7 @@ forvalues year = 2016/2018 {
 	
 	//get total population 
 	qui use "input_data/wid_population/pops.dta", clear 
-	qui sum npopul if country == "PER" & year == `year'
+	qui sum npopul_adults if country == "PER" & year == `year'
 	local totalpop = r(mean)
 	
 	qui use "`tab_`year''" , clear
@@ -86,7 +86,7 @@ forvalues year = 2016/2018 {
 	}
 	
 	cap export excel ///
-	"input_data/admin_data/PER/_clean/total-pre-PER.xlsx", ///
+	"input_data/admin_data/PER/_clean/total-pre-PER-adults.xlsx", ///
 		sheet("`year'", replace) firstrow(variables) keepcellfmt 
 	
 }

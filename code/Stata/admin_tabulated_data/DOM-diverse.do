@@ -46,9 +46,8 @@ forvalues year = 2012/2020 {
 	quietly save `tab_`year'', replace
 	
 	qui use "input_data/wid_population/pops.dta", clear	
-		
 	qui keep if iso == "DO" 	
-	quietly sum npopul if year == `year' 
+	quietly sum npopul_adults if year == `year' 
 	local totalpop = r(mean)
 	
 	qui use `tab_`year'' , clear
@@ -84,7 +83,7 @@ forvalues year = 2012/2020 {
 	qui replace component = "postax" in 1 
 	
 	cap export excel `lister' using ///
-		"input_data/admin_data/DOM/_clean/total-pos-DOM.xlsx", ///
+		"input_data/admin_data/DOM/_clean/total-pos-DOM-adults.xlsx", ///
 		sheet("`year'", replace) firstrow(variables) keepcellfmt 
 		
 	di as text "DOM - `year' done"	

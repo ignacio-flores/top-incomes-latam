@@ -18,6 +18,4 @@ foreach dofile in ///
 	}
 }
 
-//adjust populations where needed	
-di as result "(02b) Doing `dofile'.do at ($S_TIME)"
-quietly do "code/Stata/admin_tabulated_data/BRA-COL-ECU_adults_to_totpop.do"
+*quietly do "code/Stata/admin_tabulated_data/BRA-COL-ECU_adults_to_totpop.do"

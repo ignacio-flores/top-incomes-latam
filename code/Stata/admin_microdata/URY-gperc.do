@@ -3,29 +3,18 @@ clear
 di as result "crunching Uruguayan adminisitrative microdata..."
 global data "input_data/admin_data/URY"
 
-/*
-scalar pob_09=2348300 
-scalar pob_10=2370788 
-scalar pob_11=2390888 
-scalar pob_12=2410258 
-scalar pob_13=2430379 
-scalar pob_14=2451739 
-scalar pob_15=2474284 
-scalar pob_16=2497361 
+//get total population 
+qui use "input_data/wid_population/pops.dta", clear 
+forvalues x = 2009/2016{
+	local x2 = substr("`x'", 3, 4)
+	qui sum npopul_adults if country == "URY" & year == `x'
+	scalar pob_`x2' = r(mean)
+	di as result "year `x' scalar pob_`x2': " pob_`x2'
+}
 
-*/
-scalar pob_09=3378083 
-scalar pob_10=3396706 
-scalar pob_11=3412636 
-scalar pob_12=3426466 
-scalar pob_13=3440157 
-scalar pob_14=3453691 
-scalar pob_15=3467054 
-scalar pob_16=3480222					
-*/
-qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //  
+foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //  
 
-	di as text "year `year'..." _continue
+	di as result "Crunching URY `year'..." _continue
 	use "$data/microdata/Mega20`year'_paracuadros_alt3", clear  
 
 	*-------------------------------------------------------------------------------
@@ -38,44 +27,44 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 	*Add indivs so that database accounts for the entire population
 	local new_pob 	=pob_`year' - _N
 	local new = _N + `new_pob'
-	set obs `new'
+	qui set obs `new'
 
 	*Missings recoded as "0"
-	replace tot_inc=0 if tot_inc==.
+	qui replace tot_inc=0 if tot_inc==.
 
 	*Shares
-	gen sh_cap=cap_inc/tot_inc
-	gen sh_lab=lab_inc/tot_inc
-	gen sh_pen=pen_inc/tot_inc
-	gen sh_mix=mix_inc/tot_inc
+	qui gen sh_cap=cap_inc/tot_inc
+	qui gen sh_lab=lab_inc/tot_inc
+	qui gen sh_pen=pen_inc/tot_inc
+	qui gen sh_mix=mix_inc/tot_inc
 
 	*Sex
-	gen male=0
-	replace male=1 if sex==1
-	label var male "Male"
+	qui gen male=0
+	qui replace male=1 if sex==1
+	qui label var male "Male"
 
 	*Age groups
-	gen age_1=0
-	replace age_1=1 if age<40 & age!=.
-	gen age_2=0
-	replace age_2=1 if age>39 & age<60  & age!=.
-	gen age_3=0
-	replace age_3=1 if age>59  & age!=.
-	gen age_4=0
-	replace age_4=1 if age==. // important because there are many missings in top incomes
+	qui gen age_1=0
+	qui replace age_1=1 if age<40 & age!=.
+	qui gen age_2=0
+	qui replace age_2=1 if age>39 & age<60  & age!=.
+	qui gen age_3=0
+	qui replace age_3=1 if age>59  & age!=.
+	qui gen age_4=0
+	qui replace age_4=1 if age==. // important because there are many missings in top incomes
 
 
 	tempvar poptot agg_pop freq F  
-	gsort -tot_inc
-	gen `poptot' = pob_`year'
-	gen `freq' 	= 1 / `poptot'
-	gen `F' 		= 1-sum(`freq')
+	qui gsort -tot_inc
+	qui gen `poptot' = pob_`year'
+	qui gen `freq' 	= 1 / `poptot'
+	qui gen `F' 		= 1-sum(`freq')
 	
 	// Classify obs in g-percentiles
 	cap drop ftile
-	gsort -`F'
-	sort `F'
-	egen ftile = cut(`F'), at(0(0.01)0.99 0.991(0.001)0.999 ///
+	qui gsort -`F'
+	qui sort `F'
+	qui egen ftile = cut(`F'), at(0(0.01)0.99 0.991(0.001)0.999 ///
 		0.9991(0.0001)0.9999 0.99991(0.00001)0.99999 1)
 
 	*-------------------------------------------------------------------------------
@@ -87,50 +76,48 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 	mat tax_`year'		=J(127,2,.)
 
 	cap drop aux
-	gen aux = round(ftile*100000)
-	gen p = 0 
-	replace p = aux/100000
+	qui gen aux = round(ftile*100000)
+	qui gen p = 0 
+	qui replace p = aux/100000
 
 	cap drop countp
-	gen countp = 0
+	qui gen countp = 0
 	local x = 0
 	forvalues i = 0(1000)99000 {
 		local x = `x' + 1
-		replace countp = `x' if aux == `i'
+		qui replace countp = `x' if aux == `i'
 	}
 
 	local x = 100
 	forvalues i = 99100(100)99900 {
 		local x = `x' + 1
-		replace countp = `x' if aux == `i'
+		qui replace countp = `x' if aux == `i'
 	}
 
 	local x = 109
 	forvalues i = 99910(10)99990 {
 		local x = `x' + 1
-		replace countp = `x' if aux == `i'
+		qui replace countp = `x' if aux == `i'
 	}
 
 	local x = 118
 	forvalues i = 99991(1)100000 {
 		local x = `x' + 1
-		replace countp = `x' if aux == `i'
+		qui replace countp = `x' if aux == `i'
 	}
 	
-	
-
 
 	local x=0
 	forvalues cent=1/127 {
 		local x=`x'+1
 		
-		sum 	tot_inc, d
+		qui sum 	tot_inc, d
 		local   pob_tot=r(N)
 		local   average=r(mean)
 		mat out_mat_`year'[`x',16]=`pob_tot'
 		mat out_mat_`year'[`x',17]=`average'
 		
-		sum 	tot_inc if countp==`cent', d
+		qui sum 	tot_inc if countp==`cent', d
 		local 	aver=r(mean)
 		local 	thres=r(min) + `x' // to meke sure they are ascending if equal ()
 		local   pob=r(N)
@@ -138,29 +125,29 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 		mat out_mat_`year'[`x',2]=`thres'
 		mat out_mat_`year'[`x',3]=`aver'
 
-		sum 	tot_inc if countp >= `cent', d
+		qui sum 	tot_inc if countp >= `cent', d
 		mat out_mat_`year'[`x',14]=r(mean)
 
-		sum 	p if countp == `cent', d
+		qui sum 	p if countp == `cent', d
 		mat out_mat_`year'[`x',15]=r(max)
 
-		sum 	male if countp==`cent', d
+		qui sum 	male if countp==`cent', d
 		local	aver_male=r(mean)
 		local 	aver_female=1-r(mean)
 		mat out_mat_`year'[`x',4]=`aver_male'
 		mat out_mat_`year'[`x',5]=`aver_female'
 		
-		sum 	e_tax_rate if countp==`cent', d
+		qui sum 	e_tax_rate if countp==`cent', d
 		local	tax_rate=r(mean)
 		mat tax_`year'[`x',1]=`tax_rate'
-		sum 	e_ss_rate if countp==`cent', d
+		qui sum 	e_ss_rate if countp==`cent', d
 		local	ss_rate=r(mean)
 		mat tax_`year'[`x',2]=`ss_rate'
 
 		local z=5
 		foreach group in "age_1" "age_2" "age_3" "age_4" {
 			local z=`z'+1
-			sum 	`group' if countp==`cent', d
+			qui sum 	`group' if countp==`cent', d
 			local	aver_`group'=r(mean)
 			mat out_mat_`year'[`x',`z']=`aver_`group''
 		}
@@ -169,9 +156,9 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 		local z=9
 		foreach group in "lab_inc" "mix_inc" "pen_inc" "cap_inc" {
 			local z=`z'+1
-			sum 	`group' if countp==`cent', d
+			qui sum 	`group' if countp==`cent', d
 			local	sum_`group'=r(sum)
-			sum 	tot_inc if countp==`cent', d
+			qui sum 	tot_inc if countp==`cent', d
 			local	sum_tot_inc=r(sum)
 			local 	aver_`group'=`sum_`group''/`sum_tot_inc'
 			mat out_mat_`year'[`x',`z']=`aver_`group''
@@ -190,11 +177,10 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 		mkdir "`dirpath'"
 		display "Created directory: `dirpath'"
 	}	
-
-	putexcel set "input_data/admin_data/URY/gpinter_URY_20`year'.xlsx", modify
-	putexcel A1=matrix(out_mat_`year'), colnames
 	
-	putexcel set "input_data/admin_data/URY/_clean/total-pre-URY.xlsx", modify sheet(20`year')
+	putexcel set ///
+		"input_data/admin_data/URY/_clean/total-pre-URY-adults.xlsx", ///
+		modify sheet(20`year')
 	putexcel A1=matrix(out_mat_`year'), colnames
 
 	// save effective tax rates data
@@ -225,6 +211,5 @@ qui foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 
 	save "input_data/admin_data/URY/eff-tax-rate/URY_effrates_20`year'", replace
 	di as result " done"
-*exit 1
 }
 

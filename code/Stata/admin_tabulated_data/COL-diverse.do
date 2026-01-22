@@ -9,7 +9,7 @@ forvalues y = 2014/`lasty_col_tax' {
 	
 	//get total population 
 	qui use "input_data/wid_population/pops.dta", clear 
-	qui sum npopul if country == "COL" & year == `y'
+	qui sum npopul_adults if country == "COL" & year == `y'
 	local totalpop = r(mean)
 	
 	*open tax data 
@@ -130,7 +130,7 @@ forvalues y = 2014/`lasty_col_tax' {
 			}	
 			
 			qui export excel using ///
-				"input_data/admin_data/COL/_clean/total-`v'-COL.xlsx", ///
+				"input_data/admin_data/COL/_clean/total-`v'-COL-adults.xlsx", ///
 				firstrow(			variables)  sheet("`y'", modify) 
 		restore
 		
