@@ -38,16 +38,12 @@ load_other_tabs <- function(ctry, path, pattern) {
     df <- select(df, country, year, p, thr, bracketavg, topavg)
     return(df)
   })
-  
 }
 
 #bring arg, cri and mex 
 arg_tabs <- load_other_tabs(ctry = "ARG", path = "input_data/admin_data/ARG", pattern = "wage.*\\.xlsx$")
 cri_tabs <- load_other_tabs(ctry = "CRI", path = "input_data/admin_data/CRI", pattern = "diverse.*\\.xlsx$")
 mex_tabs <- load_other_tabs(ctry = "MEX", path = "input_data/admin_data/MEX/_clean", pattern = "total-pre.*\\.xlsx$")
-
-
-#last exception for ecu 
 
 #bring all toghether 
 countries2 <- rbind(arg_tabs, cri_tabs, mex_tabs) %>% 

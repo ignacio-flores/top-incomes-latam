@@ -39,7 +39,7 @@ global vars_BRA K L P G M N O U S
 global vars_DOM J K O F L M N P Q
 
 *list of codes to fetch 
-local dcodes 11 1 44 43 4 5 61 62 752 75 7
+local dcodes 11 1 44 43 4 5 61 62 752 75 7 121 122 441
 local bcodes 2 3 5
 
 //loop over countries with integrated accounts
