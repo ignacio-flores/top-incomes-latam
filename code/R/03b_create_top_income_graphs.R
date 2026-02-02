@@ -3,10 +3,14 @@
 # Goal: modular graphs by denominator concept × percentile
 ###############################################
 
-# d613, (12 = 121 122) (44 = 441 + (442+443) -> quitar todo 44); en vez de quitar 121, y 122 que son = 611 y 612, quitamos 61 y entonces botamos tambien 614 y 615
-#  - Imputed rent of owner occupiers - part of b2 
-# argentina y el salvador wid denominator
-# Fixed capital consumption === wid sna
+# d613  households (not  Employees’ social contributions  but close) social contributions 
+# (12 = 121 122) (44 = 441 + (442+443) -> quitar todo 44); 
+#en vez de quitar 121, y 122 que son = 611 y 612, quitamos 61 y entonces botamos tambien 614 y 615
+# so we propose b5g + d62 - fcf (wid) - d61 (large coverage and includes 611,2,3 which we were going to throw
+# anyway) - d44 (we lose 442 and 443 more than we want) 
+#  - Imputed rent of owner occupiers - part of b2 (?)
+# argentina y el salvador wid denominator - DONE
+# Fixed capital consumption === wid sna - DONE
 
 rm(list = ls())
 
@@ -118,7 +122,7 @@ country_palette <- c(
 
 plot_df <- top_income_df %>%
   filter(p == 0.99) %>%
-  filter(denom_source == "BFM") %>%
+  filter(denom_source == "SNA_CEI + SNA_WID") %>%
   filter(country %in% names(country_palette)) %>%
   filter(!is.na(top_share)) %>%
   select(country, year, top_share) %>%

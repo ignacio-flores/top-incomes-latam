@@ -21,6 +21,7 @@ suppressPackageStartupMessages({
 PATH_NUMERATOR <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/gpinter/selected.csv"
 PATH_DENOMINATOR1 <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/national_accounts/sna-cei.dta"
 PATH_DENOMINATOR2 <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/intermediary_data/dfm_totals/dfm_denominator.csv"
+PATH_SUPPLEMENT_SNA <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/national_accounts/sna-wid.dta"
 PATH_POPS <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/input_data/wid_population/pops.dta"
 
 ###############################################
@@ -42,16 +43,60 @@ denominator_raw2 <- read_csv(PATH_DENOMINATOR2 , show_col_types = FALSE)
 
 
 # ------------------------------------------------------
-# CONCEPT 1 — SIMPLE DENOMINATOR (B5g only) HAVE TO SUBTRACT CAPDEP
+# CONCEPT 1 — SIMPLE DENOMINATOR (B5g = b5n from cei - fcc_hh from wid
+# Special rule for SLV & ARG: from 2000 onward use TOT_B5g_wid
 # ------------------------------------------------------
 
-denom_simple <- denominator_raw1 %>%
+# Load the additional WID variable
+supplement_raw <- read_dta(PATH_SUPPLEMENT_SNA)
+
+# Keep only what we need from supplement
+supplement_vars <- supplement_raw %>%
+  select(country, year, cfc_hh, TOT_B5g_wid)
+
+# ------------------------------------------------------
+# CONCEPT 1A — GENERAL: B5g = B5n(CEI) - cfc_hh(WID)
+# (computed only if BOTH available)
+# ------------------------------------------------------
+denom_simple_general <- denominator_raw1 %>%
   select(country, year, TOT_B5g_cei) %>%
-  rename(denom_total = TOT_B5g_cei) %>%
+  left_join(supplement_vars %>% select(country, year, cfc_hh),
+            by = c("country", "year")) %>%
   mutate(
-    denom_concept = "B5g_simple",
-    denom_source  = "SNA_CEI"
+    denom_total = if_else(
+      !is.na(TOT_B5g_cei) & !is.na(cfc_hh),
+      TOT_B5g_cei - cfc_hh,
+      NA_real_
+    ),
+    denom_concept = "B5g=B5n-fcdep",
+    denom_source  = "SNA_CEI + SNA_WID"
+  ) %>%
+  select(country, year, denom_total, denom_concept, denom_source)
+
+# ------------------------------------------------------
+# CONCEPT 1B — SPECIAL OVERRIDE: ARG/SLV from 2000+ use TOT_B5g_wid
+# ------------------------------------------------------
+denom_simple_override <- supplement_vars %>%
+  filter(country %in% c("ARG", "SLV"), year >= 2000) %>%
+  transmute(
+    country,
+    year,
+    denom_total   = if_else(!is.na(TOT_B5g_wid), TOT_B5g_wid, NA_real_),
+    denom_concept = "B5g=B5n-fcdep",
+    denom_source  = "SNA_WID (override 2000+)"
   )
+
+# ------------------------------------------------------
+# FINAL denom_simple:
+# remove ARG/SLV 2000+ from general, then add override
+# ------------------------------------------------------
+denom_simple <- denom_simple_general %>%
+  filter(!(country %in% c("ARG", "SLV") & year >= 2000)) %>%
+  bind_rows(denom_simple_override) %>%
+  arrange(country, year)
+
+
+
 # ------------------------------------------------------
 # CONCEPT 2 — bfm DENOMINATOR 
 # ------------------------------------------------------
