@@ -3,6 +3,11 @@
 # Goal: modular graphs by denominator concept × percentile
 ###############################################
 
+# d613, (12 = 121 122) (44 = 441 + (442+443) -> quitar todo 44); en vez de quitar 121, y 122 que son = 611 y 612, quitamos 61 y entonces botamos tambien 614 y 615
+#  - Imputed rent of owner occupiers - part of b2 
+# argentina y el salvador wid denominator
+# Fixed capital consumption === wid sna
+
 rm(list = ls())
 
 suppressPackageStartupMessages({
