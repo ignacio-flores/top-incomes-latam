@@ -2,7 +2,7 @@ fit_and_tab <- function(d) {
   
   d <- collapse_and_clean(d)
   d <- enforce_avg_strictly_inside(d)
-  
+  d <- recompute_total_avg(d)
   
   all_thr_na <- all(is.na(d$thr))
   dist <- if (all_thr_na) {

@@ -40,7 +40,8 @@ forvalues y = 2014/`lasty_col_tax' {
 	di as result "`cr' ", _continue
 	di as result "pop: " `totalpop'
 	
-	qui import excel "${route}/${fil}.xlsx", clear cellrange("`cr'") firstrow sheet("`sn'")
+	qui import excel "${route}/${fil}.xlsx", ///
+		clear cellrange("`cr'") firstrow sheet("`sn'")
 	
 	*clean 
 	qui drop if missing(Númerodecasos)

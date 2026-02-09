@@ -12,6 +12,7 @@ library(stringr)
 source("code/R/functions/fit_and_tab.R")
 source("code/R/functions/gpinterize_country.R")
 source("code/R/functions/collapse_and_clean.R")
+source("code/R/functions/recompute_total_avg.R")
 source("code/R/functions/enforce_avg_strictly_inside.R")
 
 #define target fractiles 
@@ -22,7 +23,7 @@ p_grid <- c(
 )
 
 #gpinterize some countries 
-ctries <- c("BRA", "CHL", "COL", "DOM", "PER", "SLV", "URY") %>% 
+ctries <- c("BRA", "CHL", "DOM", "PER", "SLV", "URY", "COL") %>% 
   set_names()
 countries1 <- map_dfr(ctries, gpinterize_country, .id = "country") %>%
   select(-c("b"))

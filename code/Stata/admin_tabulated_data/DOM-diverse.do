@@ -75,7 +75,7 @@ forvalues year = 2012/2020 {
 	
 	require_dir, path("input_data/admin_data/DOM/_clean")
 	cap export excel `lister' using ///
-		"input_data/admin_data/DOM/_clean/total-pre-DOM.xlsx", ///
+		"input_data/admin_data/DOM/_clean/total-pre-DOM-adults.xlsx", ///
 		sheet("`year'", replace) firstrow(variables) keepcellfmt 	
 		
 	qui replace bracketavg = bracketavg * (1 - sh_taxdue)	

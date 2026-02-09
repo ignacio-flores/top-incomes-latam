@@ -24,7 +24,7 @@ collapse_and_clean <- function(d) {
     summarise(
       p         = first(p),
       thr       = first(thr),
-      bracketavg       = stats::weighted.mean(bracketavg, w = width, na.rm = TRUE),
+      bracketavg  = stats::weighted.mean(bracketavg, w = width, na.rm = TRUE),
       average   = mean(average, na.rm = TRUE),
       width_tot = sum(width, na.rm = TRUE),
       .groups   = "drop"
