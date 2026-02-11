@@ -1,6 +1,6 @@
 collapse_and_clean <- function(d) {
   d <- d %>%
-    arrange(p) %>%
+    dplyr::arrange(p) %>%
     distinct(p, .keep_all = TRUE) %>%             # drop exact duplicate p's (if any)
     mutate(width = lead(p, default = 1) - p)
   

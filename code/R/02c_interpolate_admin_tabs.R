@@ -23,7 +23,7 @@ p_grid <- c(
 )
 
 #gpinterize some countries 
-ctries <- c("BRA", "CHL", "DOM", "PER", "SLV", "URY", "COL") %>% 
+ctries <- c("ARG", "BRA", "CHL", "DOM", "PER", "SLV", "URY", "COL") %>% 
   set_names()
 countries1 <- map_dfr(ctries, gpinterize_country, .id = "country") %>%
   select(-c("b"))
@@ -42,12 +42,12 @@ load_other_tabs <- function(ctry, path, pattern) {
 }
 
 #bring arg, cri and mex 
-arg_tabs <- load_other_tabs(ctry = "ARG", path = "input_data/admin_data/ARG", pattern = "wage.*\\.xlsx$")
+#arg_tabs <- load_other_tabs(ctry = "ARG", path = "input_data/admin_data/ARG", pattern = "wage.*\\.xlsx$")
 cri_tabs <- load_other_tabs(ctry = "CRI", path = "input_data/admin_data/CRI", pattern = "diverse.*\\.xlsx$")
 mex_tabs <- load_other_tabs(ctry = "MEX", path = "input_data/admin_data/MEX/_clean", pattern = "total-pre.*\\.xlsx$")
 
 #bring all toghether 
-countries2 <- rbind(arg_tabs, cri_tabs, mex_tabs) %>% 
+countries2 <- rbind(cri_tabs, mex_tabs) %>% 
   rename(avg = `bracketavg`)
 
 #keep two versions 

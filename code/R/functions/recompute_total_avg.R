@@ -9,7 +9,7 @@ recompute_total_avg <- function(d) {
   #recompute average 
   dx <- rbind(d, new_row) %>% arrange(p) %>% mutate(
     p_next = lead(p, default = 1),
-    w = round(p_next - p, 6)
+    w = p_next - p
   )
   newa <- with(dx, weighted.mean(bracketavg, w, na.rm = TRUE))
   d <- d %>% mutate(average = newa) 

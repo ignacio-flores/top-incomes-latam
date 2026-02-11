@@ -1,27 +1,28 @@
 fit_and_tab <- function(d) {
-  
-  d <- collapse_and_clean(d)
-  d <- enforce_avg_strictly_inside(d)
+ 
+  if ("thr" %in% colnames(d)) {
+    d <- collapse_and_clean(d)
+    d <- enforce_avg_strictly_inside(d)
+  }
   d <- recompute_total_avg(d)
   
-  all_thr_na <- all(is.na(d$thr))
-  dist <- if (all_thr_na) {
-    gpinter::tabulation_fit(
+  if ("thr" %in% colnames(d)) {
+    fit <- gpinter::tabulation_fit(
       p          = d$p,
+      threshold  = d$thr,
       bracketavg = d$bracketavg,
       average    = d$average[1]
     )
   } else {
-    gpinter::tabulation_fit(
+    fit <- gpinter::shares_fit(
       p          = d$p,
-      threshold  = d$thr,
       bracketavg = d$bracketavg,
       average    = d$average[1]
     )
   }
   
   tab <- gpinter::generate_tabulation(
-    dist,
+    fit,
     fractiles    = p_grid,
     threshold    = TRUE,
     bracketavg   = TRUE,

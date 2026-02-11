@@ -7,7 +7,7 @@ global all_countries " "COL" "ARG" "PER" "URY" "CRI" "ECU" "CHL" "BRA" "SLV" "ME
 //loop over dofiles  
 local list_noquotes : subinstr global all_countries `"""' "" , all
 foreach dofile in ///
-	"DOM-diverse" "ARG-wages-gperc" /*"COL-wid"*/  ///
+	"DOM-diverse" "ARG-diverse" "ARG-wages-gperc"   ///
 	"CRI-wage-diverse" "PER-tabulations-gperc" "SLV-wage-diverse-gperc" { 
 		
 	local sub = substr("`dofile'", 1, 3)
@@ -17,5 +17,3 @@ foreach dofile in ///
 		quietly do "code/Stata/admin_tabulated_data/`dofile'.do"
 	}
 }
-
-*quietly do "code/Stata/admin_tabulated_data/BRA-COL-ECU_adults_to_totpop.do"

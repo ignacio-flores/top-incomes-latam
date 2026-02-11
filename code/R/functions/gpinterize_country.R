@@ -10,9 +10,16 @@ gpinterize_country <- function(c) {
   dl <- lapply(sheets, function(sheet) read_excel(file, sheet = sheet))
   names(dl) <- sheets
   
+  #drop first row(s) in selected cases
+  if (c == "ARG") {
+    yrs <- as.character(2013:2018)
+    for (yr in yrs) {
+      dl[[yr]] <- if (yr == "2018") dl[[yr]][-c(1,2), ] else dl[[yr]][-1, ]
+    }
+  }
+  
   #apply gpinter to all years 
   all <- map_dfr(dl, fit_and_tab, .id = "year") %>% 
-    mutate(country = c) %>%
-    select(country, year, p, thr, avg, topavg, b)
+    mutate(country = c) %>% select(country, year, p, thr, avg, topavg, b)
   return(all)
 }

@@ -2,5 +2,6 @@ input_data/sna_UNDATA/_clean/Table*
 input_data/sna_UNDATA/raw/
 input_data/admin_data/MEX/Database_taxfiles
 input_data/admin_data/URY/microdata
+input_data/admin_data/ARG/all
 .DS_Store
 .Rhistory
