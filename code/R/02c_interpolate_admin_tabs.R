@@ -23,7 +23,7 @@ p_grid <- c(
 )
 
 #gpinterize some countries 
-ctries <- c("ARG", "BRA", "CHL", "DOM", "PER", "SLV", "URY", "COL") %>% 
+ctries <- c("URY", "ARG", "BRA", "CHL", "DOM", "PER", "SLV", "COL") %>% 
   set_names()
 countries1 <- map_dfr(ctries, gpinterize_country, .id = "country") %>%
   select(-c("b"))
@@ -33,7 +33,7 @@ load_other_tabs <- function(ctry, path, pattern) {
   files <- list.files(path, pattern = pattern, full.names = T)
   df_tabs <- map_dfr(files, function(f) {
     lin_val <- sub(".*([A-Za-z0-9]{4})\\.xlsx$", "\\1", basename(f))
-    df <- read_excel(f) %>% filter(p >= 0.9) %>% mutate(country = paste0(ctry))
+    df <- read_excel(f) %>% mutate(country = paste0(ctry))
     df$year <- lin_val
     df <- df[, !grepl("^__", names(df))]
     df <- select(df, country, year, p, thr, bracketavg, topavg)
@@ -48,10 +48,11 @@ mex_tabs <- load_other_tabs(ctry = "MEX", path = "input_data/admin_data/MEX/_cle
 
 #bring all toghether 
 countries2 <- rbind(cri_tabs, mex_tabs) %>% 
-  rename(avg = `bracketavg`)
+  rename(avg = `bracketavg`) %>% 
+  mutate(minp = NA)
 
 #keep two versions 
-all <- rbind(countries1, countries2) %>% mutate(p = round(p, 5)) 
+all <- rbind(countries1, countries2) %>% mutate(p = round(p, 6)) 
 sel <- all %>% filter(p %in% c(0.9, 0.99, 0.999, 0.9999))
 
 #make room 

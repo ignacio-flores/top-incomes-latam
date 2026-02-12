@@ -1,5 +1,9 @@
 
-//2. wid.world data -------------------------------------------------------// 
+
+clear all
+run "code/Stata/00a-preamble.do"
+
+//wid.world data -------------------------------------------------------// 
 
 global areas_wid_latam  ///
 		" "AR" "BR" "CL" "CO" "CR" "DO" "EC" "MX" "PE" "SV" "UY" "
@@ -8,7 +12,7 @@ global areas_wid_latam  ///
 
 global widvars mprgho mssbgo mssbfc msscho inyixx ///
 	agninc mnninc mconfc mgdpro mnnfin mptfrr mptfrp mccshn mccmhn mcfcco ///
-	mptfhr mgsmhn mgsrhn mgmxhn mprgco 
+	mptfhr mgsmhn mgsrhn mgmxhn mprgco mpriho
 
 // Download net national income figures (constant local currency) 
 qui wid, indicators(${widvars}) areas(${areas_wid_latam}) ages(999 992) clear
@@ -29,7 +33,8 @@ qui rename value* *
 qui rename (agninc992i agninc999i) (agninc_adults agninc_totpop)
 qui rename *999i * //these are all macro variables (defined as 999 = total pop)
 *qui rename *992i *_adults
-qui rename (mnninc mconfc inyixx) (TOT_B5n_wid TOT_K1_wid priceindex)
+qui rename (mnninc mpriho mconfc inyixx) ///
+	(TOT_B5n_wid HH_B5n_wid TOT_K1_wid priceindex)
 *qui drop *99?f *99?m
 
 //Rename other variables
@@ -51,6 +56,7 @@ qui gen foreign_up_corp = re_portf_inv_rec - re_portf_inv_paid
 qui label var gdp_wid "gross domestic product"
 qui label var nfi "net foreign income"
 qui label var TOT_B5g_wid "gross national income"
+qui label var HH_B5n_wid "Net Balance of primary income, Household sector"
 qui label var cfc_hh_mixed "personal depreciation on mixed income"
 qui label var cfc_hh "consumption of fixed capital of households"
 qui label var cfc_corp "consumption of fixed capital of corporations"

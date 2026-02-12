@@ -25,9 +25,9 @@ foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 	
 	
 	*Add indivs so that database accounts for the entire population
-	local new_pob 	=pob_`year' - _N
-	local new = _N + `new_pob'
-	qui set obs `new'
+	*local new_pob 	=pob_`year' - _N
+	*local new = _N + `new_pob'
+	*qui set obs `new'
 
 	*Missings recoded as "0"
 	qui replace tot_inc=0 if tot_inc==.
@@ -178,38 +178,17 @@ foreach year in "09" "10" "11" "12" "13" "14" "15" "16" { //
 		display "Created directory: `dirpath'"
 	}	
 	
-	putexcel set ///
-		"input_data/admin_data/URY/_clean/total-pre-URY-adults.xlsx", ///
-		modify sheet(20`year')
-	putexcel A1=matrix(out_mat_`year'), colnames
-
-	// save effective tax rates data
+	clear
+	svmat double out_mat_`year', names(col)
 	
-	qui collapse (mean)tot_inc 	(mean)e_tax_rate 	///
-		(mean)e_ss_rate	(mean)ftile, by(countp)			
-	*qui rename countp 		p_merge
-	qui gen p_merge = ftile 
-	qui rename e_tax_rate 	eff_tax_rate_ipol 
-	qui rename e_ss_rate 	eff_ss_rate_ipol 
-	qui replace eff_tax_rate_ipol = 0 if eff_tax_rate_ipol >= 1
-	qui replace eff_ss_rate_ipol  = 0 if eff_ss_rate_ipol >= 1
-	qui mvencode eff_ss_rate_ipol eff_tax_rate_ipol, mv(0) override
-	assert !missing(eff_tax_rate_ipol,eff_ss_rate_ipol)
-
-	qui replace p_merge = p_merge*10000
-	qui duplicates drop p_merge, force
-	qui drop if p_merge > 9999
-	qui format p_merge %9.0g
+	qui gen country = "URY" 
+	qui gen year = 20`year'	
+	qui drop if missing(p)
 	
-	// Create directory if it doesnt exist 
-	local dirpath "input_data/admin_data/URY/eff-tax-rate"
-	mata: st_numscalar("exists", direxists(st_local("dirpath")))
-	if (scalar(exists) == 0) {
-		mkdir "`dirpath'"
-		display "Created directory: `dirpath'"
-	}	
-
-	save "input_data/admin_data/URY/eff-tax-rate/URY_effrates_20`year'", replace
-	di as result " done"
+	
+	qui export excel ///
+			"input_data/admin_data/URY/_clean/total-pre-URY-adults.xlsx", ///
+			sheet("20`year'", replace) firstrow(variables) keepcellfmt 
+	
 }
 
