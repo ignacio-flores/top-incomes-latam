@@ -52,23 +52,23 @@ supplement_raw <- read_dta(PATH_SUPPLEMENT_SNA)
 
 # Keep only what we need from supplement
 supplement_vars <- supplement_raw %>%
-  select(country, year, cfc_hh, TOT_B5g_wid)
+  select(country, year, cfc_hh, TOT_B5g_wid) #DO NOT TOT HERE!
 
 # ------------------------------------------------------
 # CONCEPT 1A — GENERAL: B5g = B5n(CEI) - cfc_hh(WID)
 # (computed only if BOTH available)
 # ------------------------------------------------------
 denom_simple_general <- denominator_raw1 %>%
-  select(country, year, TOT_B5g_cei) %>%
+  select(country, year, B5g_cei) %>%
   left_join(supplement_vars %>% select(country, year, cfc_hh),
             by = c("country", "year")) %>%
   mutate(
     denom_total = if_else(
-      !is.na(TOT_B5g_cei) & !is.na(cfc_hh),
-      TOT_B5g_cei - cfc_hh,
+      !is.na(B5g_cei) & !is.na(cfc_hh),
+      B5g_cei - cfc_hh,
       NA_real_
     ),
-    denom_concept = "B5g=B5n-fcdep",
+    denom_concept = "upper",
     denom_source  = "SNA_CEI + SNA_WID"
   ) %>%
   select(country, year, denom_total, denom_concept, denom_source)
@@ -82,7 +82,7 @@ denom_simple_override <- supplement_vars %>%
     country,
     year,
     denom_total   = if_else(!is.na(TOT_B5g_wid), TOT_B5g_wid, NA_real_),
-    denom_concept = "B5g=B5n-fcdep",
+    denom_concept = "upper",
     denom_source  = "SNA_WID (override 2000+)"
   )
 
@@ -105,38 +105,56 @@ denom_bfm <- denominator_raw2 %>%
   select(country, year, bfm_totinc) %>%
   rename(denom_total = bfm_totinc) %>%
   mutate(
-    denom_concept = "bfm_totinc",
+    denom_concept = "lower",
     denom_source  = "BFM"
   )
 
-
 # ------------------------------------------------------
-# CONCEPT 2 — COMPOSITE DENOMINATOR (PLACEHOLDER)
-# ------------------------------------------------------
-# denom_dfm <- denominator_raw2 %>%
-#   select(country, year,
-#          TOT_B5g_cei,
-#          UN_component1,
-#          UN_component2,
-#          UN_component3) %>%
-#   mutate(
-#     denom_total =
-#       TOT_B5g_cei -
-#       UN_component1 +
-#       UN_component2 -
-#       UN_component3,
-#     denom_concept = "B5g_adjusted_UN",
-#     denom_source  = "CEI_plus_UN"
-#   ) %>%
-#   select(country, year, denom_total, denom_concept, denom_source)
-
-# ------------------------------------------------------
-# COMBINE DENOMINATOR CONCEPTS
+# CONCEPT 3 — "MIDDLE" SNA-CONSTRUCTED DENOMINATOR (ACTUAL)
+# Denom^(3)_actual = B5g_HH + D62 - D61 - D44 - B2g - CFC_HH
+#   B5g, D62, D61, D44, B2g from CEI–SNA
+#   CFC_HH (cfc_hh) from WID SNA supplement
 # ------------------------------------------------------
 
+denom_middle_actual <- denominator_raw1 %>%
+  select(
+    country, year,
+    B5g_cei,   # B5g_HH
+    D62_cei,       # D.62
+    D61_cei,       # D.61 (611+612+613+614+615)
+    D44_cei,       # D.44 (441+442+443)
+    B2g_cei        # B.2g (HH operating surplus, gross) proxy for imputed rent
+  ) %>%
+  left_join(
+    supplement_vars %>% select(country, year, cfc_hh),   # P.51c (HH)
+    by = c("country", "year")
+  ) %>%
+  mutate(
+    denom_total = if_else(
+      !is.na(B5g_cei) &
+        !is.na(D62_cei) &
+        !is.na(D61_cei) &
+        !is.na(D44_cei) &
+        !is.na(B2g_cei) &
+        !is.na(cfc_hh),
+      B5g_cei + D62_cei - D61_cei - D44_cei - B2g_cei - cfc_hh,
+      NA_real_
+    ),
+    denom_concept = "middle",
+    denom_source  = "SNA_CEI + SNA_WID"
+  ) %>%
+  select(country, year, denom_total, denom_concept, denom_source)
+
+
+# ------------------------------------------------------
+# ADD CONCEPT 3 TO THE DENOMINATOR STACK
+# ------------------------------------------------------
 denominator <- bind_rows(
-  denom_simple, denom_bfm
+  denom_simple,
+  denom_bfm,
+  denom_middle_actual
 )
+
 
 ###############################################
 # 3. LOAD & PREPARE POPULATION (WID POPS)
@@ -163,45 +181,53 @@ pops <- pops_raw %>%
 # Put this BEFORE inner_join() drops years.
 ###############################################
 
-# Numerator availability (country-year exists in numerator)
+# Denominator availability (by concept) — ONLY if denom_total is actually present
+avail_denominator <- denominator %>%
+  filter(!is.na(denom_total)) %>%              # <-- key fix
+  distinct(country, year, denom_concept) %>%
+  mutate(has_denominator = TRUE)
+
+
 avail_numerator <- numerator %>%
+  filter(!is.na(thr) | !is.na(avg) | !is.na(topavg)) %>%  # any useful info
   distinct(country, year) %>%
   mutate(has_numerator = TRUE)
 
-# Denominator availability (by concept)
-avail_denominator <- denominator %>%
-  distinct(country, year, denom_concept) %>%
-  mutate(has_denominator = TRUE)
 
 # Population availability
 avail_population <- pops %>%
   distinct(country, year) %>%
   mutate(has_population = TRUE)
 
-# Master grid of all country-years that appear anywhere
+all_concepts <- tibble(denom_concept = c("upper","middle","lower"))
+
 country_year_grid <- bind_rows(
-  avail_numerator %>% select(country, year),
-  avail_denominator %>% select(country, year),
-  avail_population %>% select(country, year)
+  avail_numerator  %>% select(country, year),
+  avail_population %>% select(country, year),
+  avail_denominator %>% select(country, year)
 ) %>%
-  distinct()
+  distinct() %>%
+  crossing(all_concepts)
+
 
 availability_check <- country_year_grid %>%
-  left_join(avail_numerator,   by = c("country", "year")) %>%
-  left_join(avail_population,  by = c("country", "year")) %>%
-  left_join(avail_denominator, by = c("country", "year")) %>%
+  left_join(avail_numerator,   by = c("country","year")) %>%
+  left_join(avail_population,  by = c("country","year")) %>%
+  left_join(avail_denominator, by = c("country","year","denom_concept")) %>%
   mutate(
-    has_numerator   = if_else(is.na(has_numerator),   FALSE, TRUE),
-    has_population  = if_else(is.na(has_population),  FALSE, TRUE),
-    has_denominator = if_else(is.na(has_denominator), FALSE, TRUE),
+    has_numerator   = coalesce(has_numerator, FALSE),
+    has_population  = coalesce(has_population, FALSE),
+    has_denominator = coalesce(has_denominator, FALSE),
     has_all         = has_numerator & has_population & has_denominator
   ) %>%
   arrange(country, year, denom_concept)
 
 
+
 # Optional: quickly see which years will survive the merge
 availability_survive <- availability_check %>%
-  filter(has_numerator, has_population, has_denominator)
+  filter(has_all)
+
 
 ###############################################
 # 4. ALIGN YEARS & MERGE ALL SOURCES

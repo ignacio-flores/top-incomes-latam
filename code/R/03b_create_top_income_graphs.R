@@ -3,14 +3,6 @@
 # Goal: modular graphs by denominator concept × percentile
 ###############################################
 
-# d613  households (not  Employees’ social contributions  but close) social contributions 
-# (12 = 121 122) (44 = 441 + (442+443) -> quitar todo 44); 
-#en vez de quitar 121, y 122 que son = 611 y 612, quitamos 61 y entonces botamos tambien 614 y 615
-# so we propose b5g + d62 - fcf (wid) - d61 (large coverage and includes 611,2,3 which we were going to throw
-# anyway) - d44 (we lose 442 and 443 more than we want) 
-#  - Imputed rent of owner occupiers - part of b2 (?)
-# argentina y el salvador wid denominator - DONE
-# Fixed capital consumption === wid sna - DONE
 
 rm(list = ls())
 
@@ -110,7 +102,7 @@ country_palette <- c(
   "BRA" = "#66C266",  # Brazil - light green
   "URY" = "#003366",  # Uruguay - dark blue
   "ECU" = "#F1C40F",  # Ecuador - light yellow
-  "PER" = "#FF7F0E",  # Peru - terracotta / brick (FIXED)
+  "PER" = "#000000",  # Peru - terracotta / brick (FIXED)"#FF7F0E"
   "DOM" = "#F5B7B1",  # Dominican Republic - light pink
   "CRI" = "#7A7A7A",  # Costa Rica - black
   "SLV" = "#C2185B"   # El Salvador - dark pink
@@ -120,9 +112,12 @@ country_palette <- c(
 # 4A. DATA (Top 10% = p 0.90) — ONLY REAL DATA
 ###############################################
 
+###NEED TO AUTOMIZE BUT LATER:
+### upper lower middle
+
 plot_df <- top_income_df %>%
-  filter(p == 0.99) %>%
-  filter(denom_source == "SNA_CEI + SNA_WID") %>%
+  filter(p == 0.90) %>%
+  filter(denom_concept == "middlebound_sna_actual") %>%
   filter(country %in% names(country_palette)) %>%
   filter(!is.na(top_share)) %>%
   select(country, year, top_share) %>%
@@ -151,80 +146,131 @@ country_labels <- c(
 country_palette_used <- country_palette[countries_in_data]
 country_labels_used  <- country_labels[countries_in_data]
 
-
 ###############################################
-# 4B. PLOT — WHITE + DOTTED MAJOR GRID (JOURNAL)
+# 5. AUTOMATED PLOTS: denom concept × top group
+# Assumes denom_concept is already one of: "upper", "middle", "lower"
+# Saves: {upper|lower|middle}_denom_top{10|5|1|0.5|0.1|0.05|0.01}.pdf
 ###############################################
-p_top10 <- ggplot(
-  plot_df,
-  aes(x = year, y = top_share, color = country, group = country)
-) +
-  # --- LINES: black underlay + color (tiny bit smaller) ---
-  geom_line(color = "black", linewidth = 1.25) +   # underlay
-  geom_line(linewidth = 0.70) +                    # colored line
-  
-  # --- POINTS: black underlay + color (tiny bit smaller) ---
-  geom_point(color = "black", size = 3.2, stroke = 0.55) +  # underlay
-  geom_point(size = 2.65, stroke = 0.20) +                  # colored point
-  
-  
-  scale_color_manual(
-    values = country_palette_used,
-    labels = country_labels_used
-  ) +
-  
-  scale_y_continuous(
-    labels = scales::percent_format(accuracy = 1),
-    breaks = scales::pretty_breaks(n = 5),
-    minor_breaks = NULL,
-    expand = expansion(mult = c(0.02, 0.04))
-  ) +
-  scale_x_continuous(
-    breaks = scales::pretty_breaks(n = 7),
-    minor_breaks = NULL,
-    expand = expansion(mult = c(0.01, 0.02))
-  ) +
-  
-  labs(
-    x = "Year",          # <-- set axis title text here
-    y = "Top 10% Share",  # <-- set axis title text here
-    color = NULL
-  ) +
-  
-  theme_classic(base_family = "garamond", base_size = 16) +
-  
-  theme(
-    # White backgrounds
-    panel.background = element_rect(fill = "white", color = NA),
-    plot.background  = element_rect(fill = "white", color = NA),
-    
-    # Dotted major grid only
-    panel.grid.major = element_line(color = "grey65",
-                                    linewidth = 0.45,
-                                    linetype = "dotted"),
-    panel.grid.minor = element_blank(),
-    
-    # ---- AXIS TEXT SIZE CONTROLS ----
-    axis.text.x  = element_text(size = 22),  # X tick labels
-    axis.text.y  = element_text(size = 22),  # Y tick labels
-    
-    axis.title.x = element_text(size = 24),  # X title
-    axis.title.y = element_text(size = 24),  # Y title
-    
-    axis.line  = element_line(color = "black", linewidth = 0.6),
-    axis.ticks = element_line(color = "black", linewidth = 0.45),
-    
-    # ---- LEGEND TEXT SIZE ----
-    legend.position = "bottom",
-    legend.text = element_text(size = 24, family = "garamond"),
-    legend.key = element_rect(fill = "white", color = NA),
-    legend.background = element_blank(),
-    
-    plot.margin = margin(8, 8, 8, 8)
-  ) +
-  
-  guides(color = guide_legend(nrow = 2, byrow = TRUE))
 
-p_top10
+denom_levels <- c("upper", "lower", "middle")
+
+top_groups <- tibble::tribble(
+  ~top_label, ~p_val,  ~y_lab,
+  "top10",    0.90,    "Top 10% Share",
+  "top5",     0.95,    "Top 5% Share",
+  "top1",     0.99,    "Top 1% Share",
+  "top0.5",   0.995,   "Top 0.5% Share",
+  "top0.1",   0.999,   "Top 0.1% Share",
+  "top0.05",  0.9995,  "Top 0.05% Share",
+  "top0.01",  0.9999,  "Top 0.01% Share"
+)
+
+safe_filename <- function(x) gsub("[^A-Za-z0-9_.-]", "_", x)
+
+plot_topshare <- function(df, p_target, denom_concept_target,
+                          y_label,
+                          countries_keep = names(country_palette),
+                          palette = country_palette,
+                          labels = country_labels) {
+  
+  plot_df <- df %>%
+    filter(p == p_target) %>%
+    filter(denom_concept == denom_concept_target) %>%
+    filter(country %in% countries_keep) %>%
+    filter(!is.na(top_share)) %>%
+    select(country, year, top_share) %>%
+    arrange(country, year)
+  
+  if (nrow(plot_df) == 0) return(NULL)
+  
+  countries_in_data <- intersect(names(palette), unique(plot_df$country))
+  
+  plot_df <- plot_df %>%
+    mutate(country = factor(country, levels = countries_in_data))
+  
+  palette_used <- palette[countries_in_data]
+  labels_used  <- labels[countries_in_data]
+  
+  ggplot(plot_df, aes(x = year, y = top_share, color = country, group = country)) +
+    geom_line(color = "black", linewidth = 1.25) +
+    geom_line(linewidth = 0.70) +
+    geom_point(color = "black", size = 3.2, stroke = 0.55) +
+    geom_point(size = 2.65, stroke = 0.20) +
+    scale_color_manual(values = palette_used, labels = labels_used) +
+    scale_y_continuous(
+      labels = scales::percent_format(accuracy = 1),
+      breaks = scales::pretty_breaks(n = 5),
+      minor_breaks = NULL,
+      expand = expansion(mult = c(0.02, 0.04))
+    ) +
+    scale_x_continuous(
+      breaks = scales::pretty_breaks(n = 7),
+      minor_breaks = NULL,
+      expand = expansion(mult = c(0.01, 0.02))
+    ) +
+    labs(x = "Year", y = y_label, color = NULL) +
+    theme_classic(base_family = "garamond", base_size = 16) +
+    theme(
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background  = element_rect(fill = "white", color = NA),
+      panel.grid.major = element_line(color = "grey65", linewidth = 0.45, linetype = "dotted"),
+      panel.grid.minor = element_blank(),
+      axis.text.x  = element_text(size = 22),
+      axis.text.y  = element_text(size = 22),
+      axis.title.x = element_text(size = 24),
+      axis.title.y = element_text(size = 24),
+      axis.line  = element_line(color = "black", linewidth = 0.6),
+      axis.ticks = element_line(color = "black", linewidth = 0.45),
+      legend.position = "bottom",
+      legend.text = element_text(size = 24, family = "garamond"),
+      legend.key = element_rect(fill = "white", color = NA),
+      legend.background = element_blank(),
+      plot.margin = margin(8, 8, 8, 8)
+    ) +
+    guides(color = guide_legend(nrow = 2, byrow = TRUE))
+}
+
+plot_topshare(
+  df = top_income_df,
+  p_target = 0.90,
+  denom_concept_target = "upper",
+  y_label = "top10"
+)
+
+
+for (denom_short in denom_levels) {
+  for (i in seq_len(nrow(top_groups))) {
+    
+    p_target  <- top_groups$p_val[[i]]
+    top_label <- top_groups$top_label[[i]]
+    y_lab     <- top_groups$y_lab[[i]]
+    
+    g <- plot_topshare(
+      df = top_income_df,
+      p_target = p_target,
+      denom_concept_target = denom_short,
+      y_label = y_lab
+    )
+    
+    if (is.null(g)) {
+      message("No data for: ", denom_short, " / ", top_label, " (p=", p_target, ")")
+      next
+    }
+    
+    out_name <- paste0(denom_short, "_denom_", top_label, ".pdf")
+    out_path <- file.path(PATH_FIGURES, safe_filename(out_name))
+    
+    ggsave(
+      filename = out_path,
+      plot = g,
+      device = cairo_pdf,
+      width = 12,
+      height = 8,
+      units = "in"
+    )
+    
+    message("Saved: ", out_path)
+  }
+}
 
 
