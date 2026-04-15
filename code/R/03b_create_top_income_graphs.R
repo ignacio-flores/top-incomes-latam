@@ -33,10 +33,12 @@ PATH_AVAIL_CHECK   <- file.path(PATH_INTERMEDIATE, "availability_check.csv")
 PATH_AVAIL_SURVIVE <- file.path(PATH_INTERMEDIATE, "availability_survive.csv")
 
 # Output folder for graphs
-PATH_FIGURES <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/figures/top_shares"
+PATH_FIGURES          <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/figures/top_shares"
+PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures"
 
-# Create output folder if missing
-if (!dir.exists(PATH_FIGURES)) dir.create(PATH_FIGURES, recursive = TRUE)
+# Create output folders if missing
+if (!dir.exists(PATH_FIGURES))          dir.create(PATH_FIGURES,          recursive = TRUE)
+if (!dir.exists(PATH_FIGURES_OVERLEAF)) dir.create(PATH_FIGURES_OVERLEAF, recursive = TRUE)
 
 ###############################################
 # 2. LOAD DATA
@@ -258,8 +260,11 @@ for (denom_short in denom_levels) {
     }
     
     out_name <- paste0(denom_short, "_denom_", top_label, ".pdf")
-    out_path <- file.path(PATH_FIGURES, safe_filename(out_name))
-    
+    out_file <- safe_filename(out_name)
+
+    out_path          <- file.path(PATH_FIGURES,          out_file)
+    out_path_overleaf <- file.path(PATH_FIGURES_OVERLEAF, out_file)
+
     ggsave(
       filename = out_path,
       plot = g,
@@ -268,8 +273,11 @@ for (denom_short in denom_levels) {
       height = 8,
       units = "in"
     )
-    
+
+    file.copy(out_path, out_path_overleaf, overwrite = TRUE)
+
     message("Saved: ", out_path)
+    message("Mirrored to Overleaf: ", out_path_overleaf)
   }
 }
 
