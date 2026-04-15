@@ -52,7 +52,7 @@ supplement_raw <- read_dta(PATH_SUPPLEMENT_SNA)
 
 # Keep only what we need from supplement
 supplement_vars <- supplement_raw %>%
-  select(country, year, cfc_hh, TOT_B5g_wid) #DO NOT TOT HERE!
+  select(country, year, cfc_hh, HH_B5n_wid) #DO NOT TOT HERE!
 
 # ------------------------------------------------------
 # CONCEPT 1A — GENERAL: B5g = B5n(CEI) - cfc_hh(WID)
@@ -81,7 +81,7 @@ denom_simple_override <- supplement_vars %>%
   transmute(
     country,
     year,
-    denom_total   = if_else(!is.na(TOT_B5g_wid), TOT_B5g_wid, NA_real_),
+    denom_total   = if_else(!is.na(HH_B5n_wid), HH_B5n_wid, NA_real_),
     denom_concept = "upper",
     denom_source  = "SNA_WID (override 2000+)"
   )
