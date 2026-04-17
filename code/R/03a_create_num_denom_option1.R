@@ -50,9 +50,11 @@ denominator_raw2 <- read_csv(PATH_DENOMINATOR2 , show_col_types = FALSE)
 # Load the additional WID variable
 supplement_raw <- read_dta(PATH_SUPPLEMENT_SNA)
 
-# Keep only what we need from supplement
+# Keep only what we need from supplement.
+# ARG (2000+) uses TOT_B5g_wid (only B5g-related WID series with usable
+# coverage for ARG); SLV (2000+) uses HH_B5n_wid.
 supplement_vars <- supplement_raw %>%
-  select(country, year, cfc_hh, HH_B5n_wid) #DO NOT TOT HERE!
+  select(country, year, cfc_hh, HH_B5n_wid, TOT_B5g_wid)
 
 # ------------------------------------------------------
 # CONCEPT 1A — GENERAL: B5g = B5n(CEI) - cfc_hh(WID)
@@ -78,13 +80,20 @@ denom_simple_general <- denominator_raw1 %>%
 # ------------------------------------------------------
 denom_simple_override <- supplement_vars %>%
   filter(country %in% c("ARG", "SLV"), year >= 2000) %>%
-  transmute(
-    country,
-    year,
-    denom_total   = if_else(!is.na(HH_B5n_wid), HH_B5n_wid, NA_real_),
+  mutate(
+    denom_total = case_when(
+      country == "ARG" ~ TOT_B5g_wid,
+      country == "SLV" ~ HH_B5n_wid,
+      TRUE             ~ NA_real_
+    ),
     denom_concept = "upper",
-    denom_source  = "SNA_WID (override 2000+)"
-  )
+    denom_source  = case_when(
+      country == "ARG" ~ "WID TOT_B5g_wid (2000+)",
+      country == "SLV" ~ "WID HH_B5n_wid (2000+)",
+      TRUE             ~ NA_character_
+    )
+  ) %>%
+  select(country, year, denom_total, denom_concept, denom_source)
 
 # ------------------------------------------------------
 # FINAL denom_simple:

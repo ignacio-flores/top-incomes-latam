@@ -15,6 +15,7 @@ suppressPackageStartupMessages({
   library(scales)
   library(showtext)
   library(sysfonts)
+  library(readxl)
 })
 
 
@@ -90,6 +91,59 @@ top_income_df <- top_income_df %>%
   mutate(
     top_income = topavg * top_pop,
     top_share  = top_income / denom_total
+  )
+
+###############################################
+# 3.3. REAL 2020 USD CONVERSION
+# Self-contained: reads deflator + NER from input_data/deflate_and_ner.
+#   (a) Deflator: WID priceindex (inyixx, national income deflator --
+#       typically GDP deflator, CPI fallback). Snapshot extracted from
+#       WID-sourced sna-wid.dta.
+#       File: input_data/deflate_and_ner/deflator_widpriceindex.xlsx
+#              ('data' sheet + 'source' sheet with provenance)
+#   (b) NER: 2020 period-average market (nominal, NOT PPP) exchange
+#       rate, LCU per USD. Source: World Bank WDI PA.NUS.FCRF (WID
+#       equivalent: xlcusx999i). Dollarized economies (ECU, SLV) = 1.
+#       File: input_data/deflate_and_ner/ner_2020.xlsx
+#              ('data' sheet + 'source' sheet with provenance)
+#
+# conversion_factor = (PI_2020 / PI_year) / ner_2020
+# real-2020-USD value = nominal_LCU * conversion_factor
+###############################################
+
+PATH_DEFLATE_NER <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/input_data/deflate_and_ner"
+BASE_YEAR        <- 2020
+
+xrate_df <- read_excel(
+  file.path(PATH_DEFLATE_NER, "ner_2020.xlsx"),
+  sheet = "data"
+) %>%
+  rename(xrate = lcu_per_usd_2020)
+
+cpi_df <- read_excel(
+  file.path(PATH_DEFLATE_NER, "deflator_widpriceindex.xlsx"),
+  sheet = "data"
+) %>%
+  mutate(year = as.integer(year)) %>%
+  filter(!is.na(priceindex))
+
+cpi_base <- cpi_df %>%
+  filter(year == BASE_YEAR) %>%
+  select(country, pi_base = priceindex)
+
+cpi_df <- cpi_df %>%
+  inner_join(cpi_base, by = "country") %>%
+  mutate(deflator = pi_base / priceindex) %>%
+  select(country, year, deflator)
+
+top_income_df <- top_income_df %>%
+  left_join(cpi_df,   by = c("country", "year")) %>%
+  left_join(xrate_df, by = "country") %>%
+  mutate(
+    conv_factor      = deflator / xrate,
+    denom_total_real = denom_total * conv_factor,
+    topavg_real      = topavg      * conv_factor,
+    top_income_real  = top_income  * conv_factor
   )
 
 ###############################################
@@ -307,19 +361,19 @@ save_plot_both <- function(g, filename) {
 }
 
 denom_by_concept <- top_income_df %>%
-  select(country, year, denom_concept, denom_total) %>%
+  select(country, year, denom_concept, denom_total = denom_total_real) %>%
   distinct() %>%
   filter(country %in% names(country_palette))
 
 denom_percap <- top_income_df %>%
-  select(country, year, denom_concept, denom_total, pop) %>%
+  select(country, year, denom_concept, denom_total = denom_total_real, pop) %>%
   distinct() %>%
   mutate(denom_percap = denom_total / pop) %>%
   filter(country %in% names(country_palette))
 
 numerator_raw <- top_income_df %>%
   filter(country %in% names(country_palette)) %>%
-  select(country, year, p, topavg, pop) %>%
+  select(country, year, p, topavg = topavg_real, pop) %>%
   distinct() %>%
   mutate(top_income_total = topavg * (1 - p) * pop)
 
@@ -330,21 +384,21 @@ numerator_raw <- top_income_df %>%
 ###############################################
 
 denom_line_styles <- c(
-  "Upper"        = "solid",
-  "Middle"       = "dashed",
-  "Lower (BFM)"  = "dotted"
+  "Broad"   = "solid",
+  "Narrow"  = "dashed",
+  "BFM"     = "dotted"
 )
 
 denom_line_colors <- c(
-  "Upper"        = "black",
-  "Middle"       = "grey40",
-  "Lower (BFM)"  = "grey65"
+  "Broad"   = "black",
+  "Narrow"  = "grey40",
+  "BFM"     = "grey65"
 )
 
 denom_concept_labels <- c(
-  "upper"  = "Upper",
-  "middle" = "Middle",
-  "lower"  = "Lower (BFM)"
+  "upper"  = "Broad",
+  "middle" = "Narrow",
+  "lower"  = "BFM"
 )
 
 plot_all_denom_panel <- function(df, value_col, y_label,
@@ -366,7 +420,7 @@ plot_all_denom_panel <- function(df, value_col, y_label,
                            levels = countries_in_data,
                            labels = labels[countries_in_data]),
       denom_label = factor(denom_label,
-                           levels = c("Upper", "Middle", "Lower (BFM)"))
+                           levels = c("Broad", "Narrow", "BFM"))
     )
 
   # Per-country y-axis overrides via geom_blank
@@ -399,7 +453,7 @@ plot_all_denom_panel <- function(df, value_col, y_label,
     facet_wrap(~ country, scales = "free_y", ncol = 4) +
     scale_color_manual(values = denom_line_colors) +
     scale_linetype_manual(values = denom_line_styles) +
-    scale_shape_manual(values = c("Upper" = 16, "Middle" = 17, "Lower (BFM)" = 15)) +
+    scale_shape_manual(values = c("Broad" = 16, "Narrow" = 17, "BFM" = 15)) +
     scale_y_continuous(
       labels = scales::label_number(
         scale_cut = scales::cut_short_scale(),
@@ -442,19 +496,22 @@ plot_all_denom_panel <- function(df, value_col, y_label,
 g_total_all <- plot_all_denom_panel(
   denom_by_concept,
   value_col   = "denom_total",
-  y_label     = "Denominator, total (local currency)",
-  y_overrides = list(
-    "BRA" = c(0, 6e12),
-    "COL" = c(250e12, 1250e12),
-    "ARG" = c(0, 10e12)
-  )
+  y_label     = "Denominator, total (2020 USD)"
 )
 save_plot_both(g_total_all, "denom_total_panel_all.pdf")
 
+# Fixed y-axis: 0 to 15,000 USD/adult for all countries on all denom panels.
+ymax_default <- 15000
+y_overrides_common <- setNames(
+  lapply(names(country_palette), function(cc) c(0, ymax_default)),
+  names(country_palette)
+)
+
 g_percap_all <- plot_all_denom_panel(
   denom_percap,
-  value_col = "denom_percap",
-  y_label   = "Denominator per adult (local currency)"
+  value_col   = "denom_percap",
+  y_label     = "Denominator per adult (2020 USD)",
+  y_overrides = y_overrides_common
 )
 save_plot_both(g_percap_all, "denom_percap_panel_all.pdf")
 
@@ -475,9 +532,9 @@ num_groups <- tibble::tribble(
 )
 
 denom_labels <- c(
-  "upper"  = "Denominator (Upper)",
-  "lower"  = "Denominator (Lower/BFM)",
-  "middle" = "Denominator (Middle)"
+  "upper"  = "Denominator (Broad)",
+  "lower"  = "Denominator (BFM)",
+  "middle" = "Denominator (Narrow)"
 )
 
 num_colors <- c(
@@ -488,7 +545,8 @@ num_colors <- c(
 )
 
 plot_denom_num_panel <- function(denom_df, num_df, denom_concept_name, y_label,
-                                 labels = country_labels) {
+                                 labels = country_labels,
+                                 y_overrides = NULL) {
 
   denom_label <- denom_labels[[denom_concept_name]]
 
@@ -518,12 +576,22 @@ plot_denom_num_panel <- function(denom_df, num_df, denom_concept_name, y_label,
   series_colors <- c(setNames("#1F4E79", denom_label), num_colors)
   series_order  <- names(series_colors)
 
-  # Anchor y-axis: 0 to 1.15× denom max per country
-  denom_max <- denom_long %>%
-    filter(country %in% countries_in_data) %>%
-    group_by(country) %>%
-    summarise(y_max = max(value, na.rm = TRUE) * 1.15, .groups = "drop") %>%
-    mutate(y_min = 0)
+  # Anchor y-axis: use y_overrides (named list ISO3 -> c(ymin, ymax)) if
+  # provided, else fall back to 0 to 1.15× denom max per country.
+  if (!is.null(y_overrides)) {
+    anchor_rows <- lapply(countries_in_data, function(cc) {
+      lim <- y_overrides[[cc]]
+      if (is.null(lim)) return(NULL)
+      tibble(country = cc, y_min = lim[1], y_max = lim[2])
+    })
+    denom_max <- bind_rows(anchor_rows)
+  } else {
+    denom_max <- denom_long %>%
+      filter(country %in% countries_in_data) %>%
+      group_by(country) %>%
+      summarise(y_max = max(value, na.rm = TRUE) * 1.15, .groups = "drop") %>%
+      mutate(y_min = 0)
+  }
 
   y_anchors <- denom_max %>%
     pivot_longer(cols = c(y_min, y_max), values_to = "value") %>%
@@ -588,16 +656,121 @@ plot_denom_num_panel <- function(denom_df, num_df, denom_concept_name, y_label,
     guides(color = guide_legend(nrow = 1))
 }
 
+# Per-capita versions for denom_num panel (divide denominator and numerator by pop)
+# Uses denom_total_real (CPI-deflated to 2020) so values match denom_percap_panel_all.pdf
+denom_by_concept_pc <- top_income_df %>%
+  select(country, year, denom_concept, denom_total = denom_total_real, pop) %>%
+  distinct() %>%
+  mutate(denom_total = denom_total / pop) %>%
+  select(-pop) %>%
+  filter(country %in% names(country_palette))
+
+numerator_raw_pc <- numerator_raw %>%
+  mutate(top_income_total = topavg * (1 - p))
+
 for (denom_short in denom_levels) {
-  num_df_for_join <- numerator_raw %>%
+  num_df_for_join <- numerator_raw_pc %>%
     rename(p_val = p)
 
   g <- plot_denom_num_panel(
-    denom_df           = denom_by_concept %>% filter(denom_concept == denom_short),
+    denom_df           = denom_by_concept_pc %>% filter(denom_concept == denom_short),
     num_df             = num_df_for_join,
     denom_concept_name = denom_short,
-    y_label            = "Local currency"
+    y_label            = "2020 USD per adult",
+    y_overrides        = y_overrides_common
   )
   save_plot_both(g, paste0("denom_num_panel_", denom_short, ".pdf"))
 }
+
+
+###############################################
+# 9. ADMIN TABULATION COVERAGE
+# For each country-year, extract the first-row p of the "total-pre-"
+# admin tabulation and plot coverage = 1 - p (the widest top-group
+# share observed in the raw admin data). CRI has no pre- tabulation
+# and is skipped. MEX has one xlsx per year, others have one xlsx
+# with a sheet per year. ECU file is named total-pre-ECU.xlsx (no
+# "-adults" suffix).
+###############################################
+
+PATH_ADMIN <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/input_data/admin_data"
+
+coverage_countries <- setdiff(names(country_palette), c("CRI", "ECU"))
+
+first_p_from_sheet <- function(path, sheet) {
+  x <- suppressMessages(read_excel(path, sheet = sheet, n_max = 1))
+  as.numeric(x[["p"]][1])
+}
+
+extract_coverage_one <- function(iso3) {
+  if (iso3 == "MEX") {
+    files <- list.files(
+      file.path(PATH_ADMIN, "MEX", "_clean"),
+      pattern = "^total-pre-MEX-\\d{4}\\.xlsx$", full.names = TRUE
+    )
+    years <- as.integer(sub(".*-(\\d{4})\\.xlsx$", "\\1", files))
+    p_first <- vapply(files, function(f) first_p_from_sheet(f, 1),
+                      numeric(1))
+  } else {
+    fname <- if (iso3 == "ECU") "total-pre-ECU.xlsx" else
+      paste0("total-pre-", iso3, "-adults.xlsx")
+    path <- file.path(PATH_ADMIN, iso3, "_clean", fname)
+    sheets <- excel_sheets(path)
+    years <- suppressWarnings(as.integer(sheets))
+    keep <- !is.na(years)
+    sheets <- sheets[keep]
+    years  <- years[keep]
+    p_first <- vapply(sheets, function(s) first_p_from_sheet(path, s),
+                      numeric(1))
+  }
+  tibble::tibble(country = iso3, year = years, p_min = p_first,
+                 coverage = 1 - p_first)
+}
+
+coverage_df <- bind_rows(lapply(coverage_countries, extract_coverage_one)) %>%
+  arrange(country, year)
+
+countries_in_cov <- intersect(names(country_palette), unique(coverage_df$country))
+coverage_df <- coverage_df %>%
+  mutate(country = factor(country,
+                          levels = countries_in_cov,
+                          labels = country_labels[countries_in_cov]))
+
+g_coverage <- ggplot(coverage_df, aes(x = year, y = coverage)) +
+  geom_line(color = "#1F4E79", linewidth = 0.80) +
+  geom_point(color = "#1F4E79", size = 1.6) +
+  facet_wrap(~ country, ncol = 4, scales = "free_y") +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    breaks = seq(0, 0.8, 0.2),
+    minor_breaks = NULL,
+    expand = expansion(mult = c(0.02, 0.02)),
+    limits = c(0, 0.80)
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(n = 4),
+    minor_breaks = NULL,
+    expand = expansion(mult = c(0.02, 0.02))
+  ) +
+  labs(x = "Year",
+       y = "Admin tabulation coverage (1 - lowest p in year)") +
+  theme_classic(base_family = "garamond", base_size = 14) +
+  theme(
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background  = element_rect(fill = "white", color = NA),
+    panel.grid.major = element_line(color = "grey75", linewidth = 0.35, linetype = "dotted"),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "grey92", color = NA),
+    strip.text       = element_text(size = 14, face = "bold"),
+    axis.text.x  = element_text(size = 11),
+    axis.text.y  = element_text(size = 11),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.line  = element_line(color = "black", linewidth = 0.5),
+    axis.ticks = element_line(color = "black", linewidth = 0.4),
+    panel.spacing = unit(1.0, "lines"),
+    plot.margin = margin(8, 8, 8, 8)
+  )
+
+save_plot_both(g_coverage, "admin_coverage_panel.pdf")
 
