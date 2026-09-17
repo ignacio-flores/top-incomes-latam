@@ -47,6 +47,16 @@ if (!dir.exists(PATH_FIGURES_OVERLEAF)) dir.create(PATH_FIGURES_OVERLEAF, recurs
 
 top_income_df <- read_csv(PATH_TOP_INCOME_DF, show_col_types = FALSE)
 
+# -------------------------------------------------------------------------
+# Keep only top groups the admin tabulation actually reaches. The flag is
+# built in 03a (see the COVERAGE FLAG block there, plus its UPSTREAM TO-DO).
+# Drops the top 10% for ARG and SLV (all years) and COL (2014-2018); nothing
+# at top 1% or narrower is affected. One filter here is enough: the panel
+# plots in sections 7-8 read this same object further down.
+# Remove this line only if the numerator block in 03a is reverted.
+# -------------------------------------------------------------------------
+top_income_df <- top_income_df %>% filter(in_coverage)
+
 # Optional: load availability tables if they exist
 availability_check <- if (file.exists(PATH_AVAIL_CHECK)) {
   read_csv(PATH_AVAIL_CHECK, show_col_types = FALSE)

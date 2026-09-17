@@ -30,9 +30,131 @@ PATH_POPS <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/input_data/wid_pop
 
 numerator_raw <- read_csv(PATH_NUMERATOR, show_col_types = FALSE)
 
-# Keep only the essential columns now.
-numerator <- numerator_raw %>%
-  select(country, year, p, thr, avg, topavg)
+# -------------------------------------------------------------------------
+# COVERAGE FLAG  (added 2026-09)
+# -------------------------------------------------------------------------
+# THE PROBLEM
+# A top group can only be measured if the tax tabulation actually reaches
+# it. ARG's tabulation covers only the richest ~2-4% of adults, SLV's ~2-7%,
+# COL's ~5-9% before 2019. Asking those countries for a "top 10%" is asking
+# about people who are not in the data.
+#
+# gpinter answers anyway. Everyone below the lowest observed bracket was
+# assumed to earn zero, so every group WIDER than the data returns the same
+# total. ARG 2019 gives an identical number for the top 10%, 9%, 8% ... 3%.
+# The published "ARG top 10% = 6%" is really the share of its top 2.4%, i.e.
+# just the people who file. Affects the top 10% only:
+#     ARG all years, SLV all years, COL 2014-2018   (73 rows in top_income_df)
+# Top 1% and narrower sit inside coverage everywhere and are unaffected.
+#
+# WHY THOSE ROWS EXIST AT ALL
+# 02c line ~18 hardcodes the percentile grid to start at 0.9 for every
+# country, whatever that country observes. The interpolator is asked for the
+# top 10% and always returns something. Nothing between there and the figures
+# ever says no. Saying no is what this block adds.
+#
+# WHAT minp IS (and what the upstream fixes will NOT do)
+# minp = the lowest p a country's tabulation actually observes. It is a
+# recorded fact sitting next to the data, nothing more. It is ALREADY correct
+# for 62 of the 73 bad rows, and those rows are still plotted, because no
+# code has ever compared p against minp. The upstream fixes below only fill
+# in the remaining blank cells. They delete no rows and change no numbers.
+# On their own they would leave every figure exactly as it is today. The
+# filter has to live somewhere; for now it lives here.
+#
+# TARGET: read minp straight from selected.csv and compare.
+# ACTIVE: detect the plateau in detailed.csv, because minp has blanks in the
+#         exact years we need. Both branches produce `in_coverage`, so 03b
+#         does not change when we switch.
+#
+# UPSTREAM TO-DO -- bookkeeping only, neither edit removes anything
+#   1. code/R/functions/gpinterize_country.R  (~line 27)
+#        add   mutate(country = c)   just before  select(country, year, p)
+#      Puts the right country code on the little minp lookup table so the
+#      left_join on line 34 finds a match. Effect: one cell goes from blank
+#      to 0.9727 for ARG 2013-2018. It is blank today because the row drop
+#      on line 17 leaves the sheet's country column empty, and because the
+#      BRA 2000/2002/2006 sheets spell it "Brazil" instead of "BRA".
+#   2. code/R/02c_interpolate_admin_tabs.R  (~line 51)
+#        replace   mutate(minp = NA)   with
+#        group_by(country, year) %>% mutate(minp = min(p, na.rm = TRUE)) %>% ungroup()
+#      Same idea: MEX and CRI have no minp at all. This fills it in.
+#
+#   After BOTH: set USE_UPSTREAM_MINP <- TRUE, rerun, and diff against the
+#   current output. It should be identical. Then delete the plateau branch.
+#   Do not flip it before both are done: coalesce(.., TRUE) keeps rows whose
+#   minp is still blank, so ARG 2013-2018 would quietly come back.
+#
+#   ALTERNATIVE, if you would rather enforce it once at the source:
+#   after fixes 1 and 2, add to 02c ~line 56
+#        all <- ... %>% mutate(in_coverage = coalesce(p >= minp - 1e-9, TRUE))
+#        sel <- all %>% filter(p %in% c(0.9, 0.99, 0.999, 0.9999), in_coverage)
+#   Then the bad rows never reach 03, and this whole block plus the filter in
+#   03b can be deleted. Same figures either way.
+# -------------------------------------------------------------------------
+
+# >>> WHEN THE TWO UPSTREAM FIXES ABOVE ARE DONE, COLLAPSE THIS <<<
+# Delete the flag, the if/else scaffolding and the whole else branch.
+# Keep ONLY the body of the first branch. What should survive is:
+#
+#     numerator <- numerator_raw %>%
+#       mutate(p = round(p, 6),
+#              in_coverage = coalesce(p >= minp - 1e-9, TRUE)) %>%
+#       select(country, year, p, thr, avg, topavg, in_coverage)
+#
+# Do it in two steps so you can check your work: first set the flag to TRUE
+# and rerun (output should be byte-identical to the plateau version -- if it
+# is not, an upstream fix did not land), then delete the dead branch.
+# Do NOT restore the "# ORIGINAL" block at the bottom of this section. That
+# is the pre-fix code, it has no in_coverage column, and 03b will error.
+
+USE_UPSTREAM_MINP <- FALSE   # TRUE once both upstream fixes above are in
+
+if (USE_UPSTREAM_MINP) {
+
+  # Straightforward version: a group is reportable if the tabulation
+  # reaches it. coalesce(.., TRUE) keeps rows whose minp is still unknown
+  # -- without it, any country with minp = NA is silently deleted whole.
+  numerator <- numerator_raw %>%
+    mutate(p = round(p, 6),
+           in_coverage = coalesce(p >= minp - 1e-9, TRUE)) %>%
+    select(country, year, p, thr, avg, topavg, in_coverage)
+
+} else {
+
+  # Plateau detection, never reads minp so the NA problem cannot bite.
+  # Inside coverage, group income = topavg * (1 - p) must strictly FALL as
+  # p rises. On the broken rows it is flat, because the extra people swept
+  # in contribute zero. Checked against coverage recomputed from the raw
+  # tabulations: 511 rows, 0 disagreements.
+  # Limit: needs the plateau to span >= 2 points of the p grid. No current
+  # country-year is close to that edge; the upstream fix removes the caveat.
+  coverage_flag <- read_csv(file.path(dirname(PATH_NUMERATOR), "detailed.csv"),
+                            show_col_types = FALSE) %>%
+    mutate(p = round(p, 6), grp_inc = topavg * (1 - p)) %>%
+    arrange(country, year, p) %>%
+    group_by(country, year) %>%
+    mutate(
+      flat_here        = !is.na(lead(grp_inc)) &
+        abs(grp_inc - lead(grp_inc)) <= 1e-6 * pmax(abs(grp_inc), 1),
+      outside_coverage = as.logical(rev(cummax(rev(
+        as.integer(coalesce(flat_here, FALSE))))))
+    ) %>%
+    ungroup() %>%
+    select(country, year, p, outside_coverage)
+
+  numerator <- numerator_raw %>%
+    mutate(p = round(p, 6)) %>%
+    left_join(coverage_flag, by = c("country", "year", "p")) %>%
+    mutate(in_coverage = !coalesce(outside_coverage, FALSE)) %>%
+    select(country, year, p, thr, avg, topavg, in_coverage)
+
+}
+
+# ORIGINAL (replaced above: dropped minp, so nothing could ever filter on
+# coverage). Restore only together with removing the filter in 03b.
+# numerator <- numerator_raw %>%
+#   select(country, year, p, thr, avg, topavg)
 
 ###############################################
 # 2. LOAD & PREPARE DENOMINATOR (SNA–CEI)
