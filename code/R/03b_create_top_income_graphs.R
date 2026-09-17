@@ -297,13 +297,11 @@ plot_topshare <- function(df, p_target, denom_concept_target,
     guides(color = guide_legend(nrow = 2, byrow = TRUE))
 }
 
-plot_topshare(
-  df = top_income_df,
-  p_target = 0.90,
-  denom_concept_target = "upper",
-  y_label = "top10"
-)
-
+# NOTE: a bare plot_topshare(...) call used to sit here. Its result was never
+# assigned, so Rscript auto-printed it, which opened R's default device and
+# wrote a stray Rplots.pdf into the repo root. The loop below already builds
+# and saves this figure (upper x top10), so the call was pure duplication.
+# Removed 2026-09.
 
 for (denom_short in denom_levels) {
   for (i in seq_len(nrow(top_groups))) {
