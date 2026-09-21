@@ -392,21 +392,21 @@ numerator_raw <- top_income_df %>%
 ###############################################
 
 denom_line_styles <- c(
-  "Broad"   = "solid",
-  "Narrow"  = "dashed",
-  "BFM"     = "dotted"
+  "Broad"           = "solid",
+  "Narrow"          = "dashed",
+  "BFM denominator" = "dotted"
 )
 
 denom_line_colors <- c(
-  "Broad"   = "black",
-  "Narrow"  = "grey40",
-  "BFM"     = "grey65"
+  "Broad"           = "black",
+  "Narrow"          = "grey40",
+  "BFM denominator" = "grey65"
 )
 
 denom_concept_labels <- c(
   "upper"  = "Broad",
   "middle" = "Narrow",
-  "lower"  = "BFM"
+  "lower"  = "BFM denominator"
 )
 
 plot_all_denom_panel <- function(df, value_col, y_label,
@@ -428,7 +428,7 @@ plot_all_denom_panel <- function(df, value_col, y_label,
                            levels = countries_in_data,
                            labels = labels[countries_in_data]),
       denom_label = factor(denom_label,
-                           levels = c("Broad", "Narrow", "BFM"))
+                           levels = c("Broad", "Narrow", "BFM denominator"))
     )
 
   # Per-country y-axis overrides via geom_blank
@@ -461,7 +461,7 @@ plot_all_denom_panel <- function(df, value_col, y_label,
     facet_wrap(~ country, scales = "free_y", ncol = 4) +
     scale_color_manual(values = denom_line_colors) +
     scale_linetype_manual(values = denom_line_styles) +
-    scale_shape_manual(values = c("Broad" = 16, "Narrow" = 17, "BFM" = 15)) +
+    scale_shape_manual(values = c("Broad" = 16, "Narrow" = 17, "BFM denominator" = 15)) +
     scale_y_continuous(
       labels = scales::label_number(
         scale_cut = scales::cut_short_scale(),

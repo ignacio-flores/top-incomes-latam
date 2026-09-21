@@ -80,23 +80,23 @@ country_labels <- c(
 denom_concept_labels <- c(
   "upper"  = "Broad",
   "middle" = "Narrow",
-  "lower"  = "BFM"
+  "lower"  = "BFM denominator"
 )
 
 series_colors <- c(
-  "Tax tabulations" = "#C0392B",
-  "DINA"            = "#1F4E79",
-  "Survey"          = "#7A7A7A"
+  "Tax"    = "#C0392B",
+  "DINA"   = "#1F4E79",
+  "Survey" = "#7A7A7A"
 )
 series_styles <- c(
-  "Tax tabulations" = "solid",
-  "DINA"            = "dashed",
-  "Survey"          = "dotted"
+  "Tax"    = "solid",
+  "DINA"   = "dashed",
+  "Survey" = "dotted"
 )
 series_shapes <- c(
-  "Tax tabulations" = 16,
-  "DINA"            = 17,
-  "Survey"          = 15
+  "Tax"    = 16,
+  "DINA"   = 17,
+  "Survey" = 15
 )
 
 safe_filename <- function(x) gsub("[^A-Za-z0-9_.-]", "_", x)
@@ -147,7 +147,7 @@ plot_source_compare <- function(iso3, y_max = NULL, show_title = TRUE) {
     filter(country == iso3, !is.na(top_share)) %>%
     transmute(year,
               denom_label = denom_concept_labels[denom_concept],
-              series      = "Tax tabulations",
+              series      = "Tax",
               share       = top_share)
 
   if (nrow(tax) == 0) return(NULL)
@@ -155,7 +155,7 @@ plot_source_compare <- function(iso3, y_max = NULL, show_title = TRUE) {
   # Always show all three panels, even where we have no estimate, so every
   # country figure has the same layout. Narrow is empty for ARG, DOM, SLV
   # and URY; the two benchmarks still appear there, only our line is absent.
-  panels <- c("Broad", "Narrow", "BFM")
+  panels <- c("Broad", "Narrow", "BFM denominator")
 
   bench <- bench_top1 %>%
     filter(country == iso3) %>%
@@ -267,14 +267,14 @@ plot_source_compare_grid <- function(countries = NULL, free_y = TRUE) {
     filter(country %in% countries, !is.na(top_share)) %>%
     transmute(country, year,
               denom_label = denom_concept_labels[denom_concept],
-              series      = "Tax tabulations",
+              series      = "Tax",
               share       = top_share)
 
   if (nrow(tax) == 0) return(NULL)
 
   bench <- bench_top1 %>%
     filter(country %in% countries) %>%
-    crossing(denom_label = c("Broad", "Narrow", "BFM")) %>%
+    crossing(denom_label = c("Broad", "Narrow", "BFM denominator")) %>%
     select(country, year, denom_label, series, share)
 
   df <- bind_rows(tax, bench) %>%
@@ -285,7 +285,7 @@ plot_source_compare_grid <- function(countries = NULL, free_y = TRUE) {
   df <- df %>%
     mutate(
       country     = factor(country, levels = ctry_in, labels = country_labels[ctry_in]),
-      denom_label = factor(denom_label, levels = c("Broad", "Narrow", "BFM")),
+      denom_label = factor(denom_label, levels = c("Broad", "Narrow", "BFM denominator")),
       series      = factor(series, levels = names(series_colors))
     )
 
@@ -384,8 +384,8 @@ for (iso3 in countries_out) {
 
 suppressPackageStartupMessages(library(ggrepel))
 
-denom_point_colors <- c("Broad" = "#1F4E79", "Narrow" = "#E67E22", "BFM" = "#C0392B")
-denom_point_shapes <- c("Broad" = 16,        "Narrow" = 17,        "BFM" = 15)
+denom_point_colors <- c("Broad" = "#1F4E79", "Narrow" = "#E67E22", "BFM denominator" = "#C0392B")
+denom_point_shapes <- c("Broad" = 16,        "Narrow" = 17,        "BFM denominator" = 15)
 
 plot_source_scatter <- function(iso3, axis_max = NULL,
                                 label_years = TRUE, show_title = TRUE) {
@@ -397,7 +397,7 @@ plot_source_scatter <- function(iso3, axis_max = NULL,
                by = c("country", "year")) %>%
     transmute(
       year,
-      denom_label = factor(denom_label, levels = c("Broad", "Narrow", "BFM")),
+      denom_label = factor(denom_label, levels = c("Broad", "Narrow", "BFM denominator")),
       series      = factor(series,      levels = c("Survey", "DINA")),
       theirs      = share,
       ours        = top_share
@@ -474,3 +474,274 @@ for (iso3 in c("MEX", "BRA", "CRI")) {
 g_bra_nolab <- plot_source_scatter("BRA", label_years = FALSE)
 save_plot_both(g_bra_nolab, "source_scatter_top1_BRA_nolabels.pdf",
                width = 10, height = 5.6)
+
+###############################################
+# 9. EXTENDED COMPARISON: FIVE SERIES   (added 2026-09-20)
+#
+# Sections 1-8 above keep the original three-series figures untouched. This
+# section adds two further steps from the same DFM file and redraws everything
+# with five series. New filenames throughout, so nothing above is overwritten.
+#
+# The two steps added, and why they are named the way they are:
+#
+#   step = "bfm" -> "Survey adjusted tax data (BFM_all)"
+#       The survey reweighted with tax data (Blanchet-Flores-Morgan). Both its
+#       numerator AND its denominator are DFM's.
+#       *** NOT THE SAME OBJECT AS OUR "BFM denominator" SERIES. ***
+#       Our BFM denominator is built in 01c_clean_dfm_data.R from this very
+#       step (average x adpop -> bfm_totinc) and then used as the DENOMINATOR
+#       under OUR tax numerator. So the two share a source but differ in the
+#       numerator: ours is administrative, theirs is the corrected survey.
+#       Hence "_all": all of it, both halves, is theirs.
+#
+#   step = "res" -> "Scaled DINA"
+#       The survey rescaled component by component onto national accounts
+#       totals. The distribuciones code dictionary
+#       (https://distribuciones.info/descarga.html) glosses it as "Ingresos de
+#       los hogares escalados a Ctas. Nacionales", so "scaled" is the
+#       project's own word for this step; what is scaled is the survey, not
+#       DINA. It carries exactly the survey's five components (wages, capital,
+#       mixed, pensions, imputed rent) and none of the three items "nat" adds
+#       on top (undistributed corporate profits upr, net taxes on production
+#       indg, and a residual lef).
+#       NB "res" is not "residual": the dictionary gives "Residuo" to a
+#       different code, lef, which shows up as a component only inside nat.
+#       Consistent with that, going bfm -> res in Brazil 2011 the capital share
+#       rises 2.1% -> 20.0% while mixed income FALLS in levels, 4844 -> 2663
+#       per adult; a residual allocation could only ever add.
+#
+# For reference, the other two steps in the file are post-tax concepts we do
+# not use here: "pod" = post-tax disposable income, "pon" = post-tax national
+# income (pod plus transfers in kind and collective government spending).
+###############################################
+
+BENCH_STEPS_EXT <- c(
+  "raw" = "Survey",
+  "bfm" = "Survey adjusted tax data (BFM_all)",
+  "res" = "Scaled DINA",
+  "nat" = "DINA"
+)
+
+# Legend order follows the construction ladder: our own estimate first, then
+# the DFM chain from the raw survey up to full DINA.
+series_levels_ext <- c("Tax", unname(BENCH_STEPS_EXT))
+
+# One warm colour for our own series; the DFM chain is a blue ramp that
+# darkens as more national-accounts content is added, with the survey-plus-tax
+# hybrid in green because it is the one step that is neither.
+series_colors_ext <- c(
+  "Tax"                                = "#C0392B",
+  "Survey"                             = "#9A9A9A",
+  "Survey adjusted tax data (BFM_all)" = "#27AE60",
+  "Scaled DINA"                        = "#3E8FC1",
+  "DINA"                               = "#1F4E79"
+)
+series_styles_ext <- c(
+  "Tax"                                = "solid",
+  "Survey"                             = "dotted",
+  "Survey adjusted tax data (BFM_all)" = "longdash",
+  "Scaled DINA"                        = "dotdash",
+  "DINA"                               = "dashed"
+)
+series_shapes_ext <- c(
+  "Tax"                                = 16,
+  "Survey"                             = 15,
+  "Survey adjusted tax data (BFM_all)" = 18,
+  "Scaled DINA"                        = 4,
+  "DINA"                               = 17
+)
+
+bench_top1_ext <- read_csv(PATH_DIST, show_col_types = FALSE) %>%
+  filter(variable == "inc_sh",
+         unit     == "esn",
+         group    == "t1",
+         step %in% names(BENCH_STEPS_EXT)) %>%
+  mutate(series = unname(BENCH_STEPS_EXT[step])) %>%
+  select(country, year, series, share = value) %>%
+  distinct()
+
+panels_ext <- c("Broad", "Narrow", "BFM denominator")
+
+plot_source_compare_ext <- function(iso3, y_max = NULL, show_title = TRUE) {
+
+  tax <- tax_top1 %>%
+    filter(country == iso3, !is.na(top_share)) %>%
+    transmute(year,
+              denom_label = denom_concept_labels[denom_concept],
+              series      = "Tax",
+              share       = top_share)
+
+  if (nrow(tax) == 0) return(NULL)
+
+  bench <- bench_top1_ext %>%
+    filter(country == iso3) %>%
+    crossing(denom_label = panels_ext) %>%
+    select(year, denom_label, series, share)
+
+  df <- bind_rows(tax, bench) %>%
+    filter(!is.na(share)) %>%
+    mutate(
+      denom_label = factor(denom_label, levels = panels_ext),
+      series      = factor(series, levels = series_levels_ext)
+    )
+
+  ggplot(df, aes(x = year, y = share,
+                 color = series, linetype = series, group = series)) +
+    geom_line(linewidth = 0.80) +
+    geom_point(aes(shape = series), size = 1.8) +
+    facet_wrap(~ denom_label, ncol = length(panels_ext), drop = FALSE) +
+    scale_color_manual(values = series_colors_ext) +
+    scale_linetype_manual(values = series_styles_ext) +
+    scale_shape_manual(values = series_shapes_ext) +
+    scale_y_continuous(
+      labels = scales::percent_format(accuracy = 1),
+      limits = if (!is.null(y_max)) c(0, y_max) else NULL,
+      breaks = scales::pretty_breaks(n = 5),
+      minor_breaks = NULL,
+      expand = expansion(mult = c(0.02, 0.04))
+    ) +
+    scale_x_continuous(
+      breaks = scales::pretty_breaks(n = 4),
+      minor_breaks = NULL,
+      expand = expansion(mult = c(0.02, 0.02))
+    ) +
+    labs(
+      x = "Year",
+      y = "Top 1% Share",
+      title = if (show_title) country_labels[[iso3]] else NULL,
+      color = NULL, linetype = NULL, shape = NULL
+    ) +
+    theme_classic(base_family = "garamond", base_size = 14) +
+    theme(
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background  = element_rect(fill = "white", color = NA),
+      panel.grid.major = element_line(color = "grey75", linewidth = 0.35, linetype = "dotted"),
+      panel.grid.minor = element_blank(),
+      strip.background = element_rect(fill = "grey92", color = NA),
+      strip.text       = element_text(size = 14, face = "bold"),
+      plot.title       = element_text(size = 18, face = "bold", hjust = 0),
+      axis.text.x  = element_text(size = 11),
+      axis.text.y  = element_text(size = 11),
+      axis.title.x = element_text(size = 16),
+      axis.title.y = element_text(size = 16),
+      axis.line  = element_line(color = "black", linewidth = 0.5),
+      axis.ticks = element_line(color = "black", linewidth = 0.4),
+      legend.position   = "bottom",
+      legend.text       = element_text(size = 13, family = "garamond"),
+      legend.key        = element_rect(fill = "white", color = NA),
+      legend.key.width  = unit(1.6, "lines"),
+      legend.background = element_blank(),
+      panel.spacing = unit(1.0, "lines"),
+      plot.margin = margin(8, 8, 8, 8)
+    ) +
+    guides(color = guide_legend(nrow = 2, byrow = TRUE))
+}
+
+y_top_for_ext <- function(iso3) {
+  vals <- c(
+    tax_top1       %>% filter(country == iso3) %>% pull(top_share),
+    bench_top1_ext %>% filter(country == iso3) %>% pull(share)
+  )
+  vals <- vals[!is.na(vals)]
+  if (!length(vals)) return(NULL)
+  ceiling(max(vals) * 1.08 / 0.05) * 0.05
+}
+
+for (iso3 in countries_out) {
+  g <- plot_source_compare_ext(iso3, y_max = y_top_for_ext(iso3))
+  save_plot_both(g, paste0("source_compare5_top1_", iso3, ".pdf"),
+                 width = 12, height = 6.2)
+}
+
+###############################################
+# 10. EXTENDED 45-DEGREE SCATTER
+# Same idea as section 8, but one panel per DFM step instead of two, laid out
+# 2 x 2 so the figure stays square-ish. Points above the dashed line mean our
+# share is the larger one.
+###############################################
+
+plot_source_scatter_ext <- function(iso3, axis_max = NULL,
+                                    label_years = TRUE, show_title = TRUE) {
+
+  df <- tax_top1 %>%
+    filter(country == iso3, !is.na(top_share)) %>%
+    mutate(denom_label = denom_concept_labels[denom_concept]) %>%
+    inner_join(bench_top1_ext %>% filter(country == iso3),
+               by = c("country", "year")) %>%
+    transmute(
+      year,
+      denom_label = factor(denom_label, levels = panels_ext),
+      series      = factor(series, levels = unname(BENCH_STEPS_EXT)),
+      theirs      = share,
+      ours        = top_share
+    )
+
+  if (nrow(df) == 0) return(NULL)
+
+  if (is.null(axis_max)) {
+    axis_max <- ceiling(max(c(df$theirs, df$ours)) * 1.08 / 0.05) * 0.05
+  }
+
+  p <- ggplot(df, aes(x = theirs, y = ours,
+                      color = denom_label, shape = denom_label)) +
+    geom_abline(slope = 1, intercept = 0,
+                linetype = "dashed", color = "grey45", linewidth = 0.6) +
+    geom_point(size = 2.6) +
+    facet_wrap(~ series, ncol = 2) +
+    scale_color_manual(values = denom_point_colors) +
+    scale_shape_manual(values = denom_point_shapes) +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 1),
+                       limits = c(0, axis_max),
+                       breaks = scales::pretty_breaks(n = 5),
+                       expand = expansion(mult = 0.02)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                       limits = c(0, axis_max),
+                       breaks = scales::pretty_breaks(n = 5),
+                       expand = expansion(mult = 0.02)) +
+    coord_equal() +
+    labs(x = "Distribuciones top 1% share",
+         y = "Our top 1% share",
+         title = if (show_title) country_labels[[iso3]] else NULL,
+         color = NULL, shape = NULL) +
+    theme_classic(base_family = "garamond", base_size = 14) +
+    theme(
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background  = element_rect(fill = "white", color = NA),
+      panel.grid.major = element_line(color = "grey75", linewidth = 0.35, linetype = "dotted"),
+      panel.grid.minor = element_blank(),
+      strip.background = element_rect(fill = "grey92", color = NA),
+      strip.text       = element_text(size = 13, face = "bold"),
+      plot.title       = element_text(size = 18, face = "bold", hjust = 0),
+      axis.text.x  = element_text(size = 11),
+      axis.text.y  = element_text(size = 11),
+      axis.title.x = element_text(size = 15),
+      axis.title.y = element_text(size = 15),
+      axis.line  = element_line(color = "black", linewidth = 0.5),
+      axis.ticks = element_line(color = "black", linewidth = 0.4),
+      legend.position   = "bottom",
+      legend.text       = element_text(size = 14, family = "garamond"),
+      legend.key        = element_rect(fill = "white", color = NA),
+      legend.background = element_blank(),
+      panel.spacing = unit(1.2, "lines"),
+      plot.margin = margin(8, 8, 8, 8)
+    ) +
+    guides(color = guide_legend(nrow = 1))
+
+  if (label_years) {
+    p <- p + ggrepel::geom_text_repel(
+      aes(label = year), size = 3.0, family = "garamond",
+      show.legend = FALSE, min.segment.length = 0.25, seed = 1
+    )
+  }
+  p
+}
+
+# Not generated: the extended 45-degree section was dropped from the paper on
+# 2026-09-20 (the three-series version in section 8 is the one that stayed).
+# The function above is kept because it costs nothing; uncomment to regenerate.
+#
+# for (iso3 in c("MEX", "BRA", "CRI")) {
+#   g <- plot_source_scatter_ext(iso3, label_years = (iso3 != "BRA"))
+#   save_plot_both(g, paste0("source_scatter5_top1_", iso3, ".pdf"),
+#                  width = 9, height = 9.4)
+# }
