@@ -97,18 +97,37 @@ forvalues y = 2014/`lasty_col_tax' {
 		preserve
 			qui replace `v' = `v' / 1000000
 			qui drop if `v' < 0 | missing(n)
+			// gpinter needs each bracket's average above its threshold, which fails
+			// when a bracket holds a single DIAN cuantile (the richest ones, at the
+			// top): fold such a bracket into the one below instead of dropping it
+			qui egen _gid = group(ftile)
+			qui sum _gid
+			local skip 0
+			forvalues g = `r(max)'(-1)2 {
+				if `skip' == 1 {
+					local skip 0
+					continue
+				}
+				qui count if _gid == `g'
+				if r(N) == 1 {
+					qui sum ftile if _gid == `g' - 1
+					qui replace ftile = r(min) if _gid == `g'
+					local skip 1
+				}
+			}
+			drop _gid
 			// Interval thresholds
 			qui collapse ///
-				(min) poptot = `poptot' thr = `v'_inc topavg = `topavg'  ///
+				(min) poptot = `poptot' thr = `v'_inc topavg = `topavg' p = `F' ///
 				(mean) bracketavg = `v'_inc average = `inc_avg' eff_tax_rate ///
 				[w=`weight'], by (ftile)
 			foreach vari in thr bracketavg topavg {
 				format %20.0gc `vari'
 				qui replace `vari' = `vari' * 1000000
 			}	
+			// p is where the bracket's people start (lowest F in it), not the
+			// grid point below, so each bracket gets its true population share
 			sort ftile 	
-			qui replace ftile = round(ftile * 100000)
-			qui gen p = ftile / 100000
 			qui drop ftile
 			sort thr
 			qui drop if thr == 0 
@@ -116,7 +135,6 @@ forvalues y = 2014/`lasty_col_tax' {
 
 		
 			qui drop if missing(bracketavg) 
-			qui drop if bracketavg == thr
 			qui drop if thr < 1000000
 			
 			qui gen year = `y' in 1 
@@ -132,7 +150,7 @@ forvalues y = 2014/`lasty_col_tax' {
 			
 			qui export excel using ///
 				"input_data/admin_data/COL/_clean/total-`v'-COL-adults.xlsx", ///
-				firstrow(			variables)  sheet("`y'", modify) 
+				firstrow(			variables)  sheet("`y'", replace) 
 		restore
 		
 	}
