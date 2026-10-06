@@ -47,8 +47,29 @@ forvalues y = 2014/`lasty_col_tax' {
 	qui drop if missing(Númerodecasos)
 	qui drop if missing(Cuantil)
 	qui rename Númerodecasos n
-	if (`y' < 2017) qui rename Totalingresosrecibidosporcon pre_inc
-	if (`y' >= 2017) qui rename Totalingresosbrutos1 pre_inc
+	// fiscal income: everything reported minus business costs, excluding
+	// one-off gains. DIAN's headline total changes definition with the 2017
+	// form (it adds one-off gains and gross business turnover), so it is not
+	// used as is. Columns are found by their DIAN header (variable label)
+	if (`y' < 2017) {
+		qui rename Totalingresosrecibidosporcon pre_inc
+		qui ds, has(varlabel "Gastos de n*mina*" "Otros costos y deducciones*" ///
+			"Costos y gastos incurridos*")
+		local costs `r(varlist)'
+		local oneoff
+	}
+	if (`y' >= 2017) {
+		qui rename Totalingresosbrutos1 pre_inc
+		qui ds, has(varlabel "Costos y gastos procedentes*" ///
+			"Costos y deducciones procedentes*")
+		local costs `r(varlist)'
+		qui ds, has(varlabel "Ingresos por ganancias ocasionales*")
+		local oneoff `r(varlist)'
+	}
+	di as text "costs: `costs' | one-off gains: `oneoff'"
+	foreach v in `costs' `oneoff' {
+		qui replace pre_inc = pre_inc - `v' if !missing(`v')
+	}
 	qui rename Impuestonetoderenta net_tax 
 	qui keep n pre_inc net_tax
 	
