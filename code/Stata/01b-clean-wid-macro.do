@@ -45,8 +45,12 @@ qui rename (mgdpro mnnfin mptfrr mptfrp mccshn mccmhn mcfcco ///
 	y_gos_hh y_gmix_hh bpi_corp_wid)		
 		
 //compute current gross national income
+//(WID monetary series come in constant local currency: convert every one of them)
 qui gen TOT_B5g_wid = TOT_B5n_wid + TOT_K1_wid
-foreach v in TOT_B5g_wid TOT_B5n_wid TOT_K1_wid gdp_wid {
+foreach v in TOT_B5g_wid TOT_B5n_wid TOT_K1_wid gdp_wid HH_B5n_wid ///
+	cfc_hh_surplus cfc_hh_mixed cfc_corp nfi re_portf_inv_rec re_portf_inv_paid ///
+	y_cap_tax_havens y_gos_gmix_hh y_gos_hh y_gmix_hh bpi_corp_wid ///
+	mprgho mssbgo mssbfc msscho agninc_adults agninc_totpop {
 	qui replace `v' = `v' * priceindex
 }
 qui egen cfc_hh = rowtotal(cfc_hh_surplus cfc_hh_mixed)
