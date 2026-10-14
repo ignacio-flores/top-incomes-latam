@@ -488,8 +488,8 @@ save_plot_both(g_bra_nolab, "source_scatter_top1_BRA_nolabels.pdf",
 #       The survey reweighted with tax data (Blanchet-Flores-Morgan). Both its
 #       numerator AND its denominator are DFM's.
 #       *** NOT THE SAME OBJECT AS OUR "BFM denominator" SERIES. ***
-#       Our BFM denominator is built in 01c_clean_dfm_data.R from this very
-#       step (average x adpop -> bfm_totinc) and then used as the DENOMINATOR
+#       Our BFM denominator is built from this very step (01c reads it, 03a
+#       multiplies its average by WID adults) and then used as the DENOMINATOR
 #       under OUR tax numerator. So the two share a source but differ in the
 #       numerator: ours is administrative, theirs is the corrected survey.
 #       Hence "_all": all of it, both halves, is theirs.

@@ -232,13 +232,21 @@ denom_simple <- denom_simple_general %>%
 # CONCEPT 2 — bfm DENOMINATOR 
 # ------------------------------------------------------
 
+# Their average income per adult times OUR adult count (WID), so the
+# numerator and this denominator count the same people. bfm_totinc uses
+# their own adpop, which differs from WID adults by up to 15% (SLV)
+wid_adults <- read_dta(PATH_POPS) %>%
+  select(country, year, wid_adults = npopul_adults)
+
 denom_bfm <- denominator_raw2 %>%
-  select(country, year, bfm_totinc) %>%
-  rename(denom_total = bfm_totinc) %>%
+  select(country, year, average_income_bfm) %>%
+  left_join(wid_adults, by = c("country", "year")) %>%
   mutate(
+    denom_total   = average_income_bfm * wid_adults,
     denom_concept = "lower",
     denom_source  = "BFM"
-  )
+  ) %>%
+  select(country, year, denom_total, denom_concept, denom_source)
 
 # ------------------------------------------------------
 # CONCEPT 3 — "MIDDLE" SNA-CONSTRUCTED DENOMINATOR (ACTUAL)

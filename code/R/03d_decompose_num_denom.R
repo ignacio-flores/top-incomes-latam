@@ -18,11 +18,12 @@
 # One comparison is exact and one is not, and the difference matters:
 #
 #   * The BFM denominator panel is LIKE FOR LIKE on the denominator. Our BFM
-#     denominator IS the distribuciones bfm total (01c builds it as
-#     average x adpop from that step). Verified below: identical to machine
-#     precision across all 39 overlapping country-years. So in that panel the
-#     whole difference in shares is a numerator difference, and the ratio of
-#     shares equals the ratio of numerators exactly.
+#     denominator is the distribuciones bfm average income per adult, put on
+#     our adult count (03a builds it as average x WID adults). Verified below:
+#     per adult it is identical to machine precision across all overlapping
+#     country-years. So in that panel the whole difference in shares is a
+#     numerator difference, and the ratio of shares equals the ratio of
+#     per-adult numerators exactly.
 #
 #   * The Broad and Narrow panels are NOT like for like against DINA. Ours are
 #     household-sector aggregates; DINA's denominator is pre-tax national
@@ -30,10 +31,9 @@
 #     taxes on production and a residual. It is roughly 1.5x larger. A higher
 #     share against DINA is therefore expected arithmetic, not an anomaly.
 #
-# A caveat on "per adult": totals are identical where noted above, but the
-# per-adult figures differ by about 1.4% because we divide by WID adults and
-# they divide by their own adpop. The tables report totals-based shares, which
-# are unaffected.
+# A caveat on "per adult": we divide by WID adults and they divide by their own
+# adpop. For the BFM denominator this is handled in 03a, so the per-adult
+# figures match and the totals differ by WID adults / adpop.
 ###############################################
 
 rm(list = ls())
@@ -217,22 +217,22 @@ decomp <- bind_rows(
 
 ###############################################
 # 5. IDENTITY CHECK
-# Our BFM denominator must equal the distribuciones bfm total exactly. If this
-# ever stops holding, the "like for like" claim in the paper is void, so it is
-# asserted rather than merely printed.
+# Our BFM denominator must equal the distribuciones bfm total per adult
+# exactly. If this ever stops holding, the "like for like" claim in the paper
+# is void, so it is asserted rather than merely printed.
 ###############################################
 
 id_check <- ours_pa %>%
   filter(denom_label == "BFM denominator") %>%
-  select(country, year, ours = denom_total) %>%
+  select(country, year, ours = denom_pa) %>%
   inner_join(theirs_pa %>%
                filter(series == "Survey adjusted tax data (BFM_all)") %>%
-               select(country, year, theirs = denom_total),
+               select(country, year, theirs = denom_pa),
              by = c("country", "year")) %>%
   mutate(rel_diff = abs(ours - theirs) / theirs)
 
 message(sprintf(
-  "Identity check, BFM denominator vs distribuciones bfm total: %d country-years, max relative difference %.3g",
+  "Identity check, BFM denominator vs distribuciones bfm total, per adult: %d country-years, max relative difference %.3g",
   nrow(id_check), max(id_check$rel_diff)))
 stopifnot(max(id_check$rel_diff) < 1e-9)
 
