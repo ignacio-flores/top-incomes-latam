@@ -35,7 +35,7 @@ PATH_AVAIL_SURVIVE <- file.path(PATH_INTERMEDIATE, "availability_survive.csv")
 
 # Output folder for graphs
 PATH_FIGURES          <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/figures/top_shares"
-PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures"
+PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures_v2"  # results_v2.tex; results.tex and figures/ are frozen
 
 # Create output folders if missing
 if (!dir.exists(PATH_FIGURES))          dir.create(PATH_FIGURES,          recursive = TRUE)

@@ -47,13 +47,14 @@ PATH_DIST <- paste0("C:/Users/dsanc/Dropbox/github/top-incomes-latam/",
                     "input_data/distribuciones_data/smicrofile_long_grouped_jan2024.csv")
 
 PATH_FIGURES          <- "C:/Users/dsanc/Dropbox/github/top-incomes-latam/output/figures/source_comparison"
-PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures"
+PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures_v2"  # results_v2.tex; results.tex and figures/ are frozen
 
 # Keep the Overleaf mirror off until the style is signed off, so that
 # unreviewed figures do not reach coauthors. Flip to TRUE to publish.
 MIRROR_OVERLEAF <- TRUE
 
 if (!dir.exists(PATH_FIGURES)) dir.create(PATH_FIGURES, recursive = TRUE)
+if (MIRROR_OVERLEAF && !dir.exists(PATH_FIGURES_OVERLEAF)) dir.create(PATH_FIGURES_OVERLEAF, recursive = TRUE)
 
 P_TARGET <- 0.99   # top 1%
 

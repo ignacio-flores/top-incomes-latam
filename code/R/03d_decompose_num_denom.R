@@ -5,8 +5,8 @@
 # A top share is a ratio. When ours comes out above a distribuciones series,
 # it is because our numerator is larger, our denominator is smaller, or both.
 # The share figures in 03c cannot separate those. This script puts numerator
-# and denominator side by side in levels, in 2020 USD per adult, for the three
-# countries the coauthors flagged: Brazil, Colombia and El Salvador.
+# and denominator side by side in levels, in 2020 USD per adult, for every
+# country (the table: Brazil, Colombia and El Salvador, flagged by the coauthors).
 #
 # WHAT IS COMPARABLE WITH WHAT
 #
@@ -65,16 +65,17 @@ PATH_DEFLATE_NER <- file.path(ROOT, "input_data/deflate_and_ner")
 
 PATH_FIGURES          <- file.path(ROOT, "output/figures/decomposition")
 PATH_TABLES           <- file.path(ROOT, "output/tables")
-PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures"
+PATH_FIGURES_OVERLEAF <- "C:/Users/dsanc/Dropbox/Apps/Overleaf/aeq_top_incomes/figures_v2"  # results_v2.tex; results.tex and figures/ are frozen
 
 MIRROR_OVERLEAF <- TRUE
 
-for (d in c(PATH_FIGURES, PATH_TABLES)) if (!dir.exists(d)) dir.create(d, recursive = TRUE)
+for (d in c(PATH_FIGURES, PATH_TABLES, PATH_FIGURES_OVERLEAF)) if (!dir.exists(d)) dir.create(d, recursive = TRUE)
 
 P_TARGET  <- 0.99
 BASE_YEAR <- 2020
 
-COUNTRIES <- c("BRA", "COL", "SLV")
+# Figures for every country; the table keeps the three the coauthors flagged.
+COUNTRIES <- c("ARG", "BRA", "CHL", "COL", "CRI", "DOM", "MEX", "PER", "SLV", "URY")
 
 # Representative year per country for the tables. Chosen as the latest year in
 # which that country has the most of its own denominators available alongside
@@ -82,7 +83,9 @@ COUNTRIES <- c("BRA", "COL", "SLV")
 # and has the broad one only for 2014-2017, hence 2017.
 TABLE_YEAR <- c(BRA = 2021, COL = 2021, SLV = 2017)
 
-country_labels <- c("BRA" = "Brazil", "COL" = "Colombia", "SLV" = "El Salvador")
+country_labels <- c("ARG" = "Argentina", "BRA" = "Brazil", "CHL" = "Chile", "COL" = "Colombia",
+                    "CRI" = "Costa Rica", "DOM" = "Dominican Republic", "MEX" = "Mexico",
+                    "PER" = "Peru", "SLV" = "El Salvador", "URY" = "Uruguay")
 
 denom_concept_labels <- c(
   "upper"  = "Broad",

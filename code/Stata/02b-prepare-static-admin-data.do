@@ -8,7 +8,8 @@ global all_countries " "COL" "ARG" "PER" "URY" "CRI" "ECU" "CHL" "BRA" "SLV" "ME
 local list_noquotes : subinstr global all_countries `"""' "" , all
 foreach dofile in ///
 	"DOM-diverse" "ARG-diverse" "ARG-wages-gperc"   ///
-	"CRI-wage-diverse" "PER-tabulations-gperc" "SLV-wage-diverse-gperc" { 
+	"CRI-wage-diverse" "PER-tabulations-gperc" {
+	// SLV is built in R since 2026-10 (02b2_clean_admin_slv.R, called in 02c)
 		
 	local sub = substr("`dofile'", 1, 3)
 	if strpos("`list_noquotes'", "`sub'") > 0 {

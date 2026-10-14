@@ -14,6 +14,12 @@ if strpos("`list_noquotes'", "BRA") > 0 {
 	rcall: source("code/R/02b_clean_admin_bra.R")
 }
 
+//SLV (diversas net income plus wage earners; replaces SLV-wage-diverse-gperc.do)
+di as txt "Using R to clean salvadoran admin data..."
+if strpos("`list_noquotes'", "SLV") > 0 {
+	rcall: source("code/R/02b2_clean_admin_slv.R")
+}
+
 //COL
 di as txt "Using Stata to clean colombian admin data..."
 if strpos("`list_noquotes'", "COL") > 0 {
