@@ -711,6 +711,12 @@ first_p_from_sheet <- function(path, sheet) {
 }
 
 extract_coverage_one <- function(iso3) {
+  if (iso3 == "SLV") {
+    # built in R since 2026-10 (02b2): filers / adults, written by the builder
+    cv <- read.csv(file.path(PATH_ADMIN, "SLV", "_clean", "coverage-SLV.csv"))
+    return(tibble::tibble(country = iso3, year = as.integer(cv$year),
+                          p_min = 1 - cv$coverage, coverage = cv$coverage))
+  }
   if (iso3 == "MEX") {
     files <- list.files(
       file.path(PATH_ADMIN, "MEX", "_clean"),

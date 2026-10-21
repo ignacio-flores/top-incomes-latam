@@ -12,10 +12,14 @@
 #    cost of sales (Boletin Estadistico 2019, Cuadro 4.01) is subtracted, each
 #    row taking its share of all filers' business receipts ("Otros ingresos").
 #
-# Returns, by year and fractile p, the amount (DOP) to subtract from the income
-# of the top (1 - p) of adults. Same floor convention as the other corrections:
-# rows ranked by their average, the row straddling p counted pro rata. Rows are
-# not re-ranked. 02c applies it to gpinter's top averages.
+# Returns, by year and fractile p, the amount (DOP) to remove from the income
+# of the top (1 - p) of adults and that group's income in DGII's rows, both
+# with the floor convention (rows ranked by their average, the row straddling p
+# counted pro rata; rows are not re-ranked). 02c removes the same SHARE,
+# remove / floor_inc, from gpinter's top average. Subtracting the amount itself
+# would not do: within DGII's top row gpinter puts most income at the very top,
+# while the floor spreads the row evenly, so at p99.9 and above the amount
+# could exceed what gpinter places there.
 #
 # Decided with the coauthors on 2026-10-14; see results_v2.tex, last section.
 ###############################################################################
@@ -48,7 +52,10 @@ dom_corrections <- function(p_grid,
     names(d) <- cols
     d %>% mutate(across(everything(), as.numeric), year = y)
   })) %>%
-    # row 19 is the sum of rows 20-29 (DGII's top 1% of filers), as in DOM-diverse.do
+    # row 19 is DGII's top 1% of filers, meant to be the sum of rows 20-29, and
+    # is dropped as in DOM-diverse.do. In 2012-2013 it exceeds that sum, so a
+    # small group of filers is lost there; that is inherited from DOM-diverse.do
+    # and left for a separate fix.
     filter(n != 19) %>%
     group_by(year) %>%
     mutate(lump = if_else(n >= 20, pmax(wage - dependinc, 0), 0),
@@ -65,10 +72,11 @@ dom_corrections <- function(p_grid,
   if (nrow(neg)) message("DOM: ", nrow(neg), " top rows where employer-declared salary exceeds Salarios (left as is)")
 
   rows %>%
-    select(year, avg, declar, remove, adults) %>%
+    select(year, avg, declar, totdec, remove, adults) %>%
     crossing(p = p_grid) %>%
     group_by(year, p) %>%
     arrange(desc(avg), .by_group = TRUE) %>%
     mutate(w = pmin(pmax(((1 - p) * adults - (cumsum(declar) - declar)) / declar, 0), 1)) %>%
-    summarise(remove = sum(remove * w), adults = first(adults), .groups = "drop")
+    summarise(remove = sum(remove * w), floor_inc = sum(totdec * w),
+              adults = first(adults), .groups = "drop")
 }

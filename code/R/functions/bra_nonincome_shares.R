@@ -8,10 +8,15 @@
 # fractile p this returns s1 = the share of the income of the top (1 - p) of
 # adults that these items make up. 02c removes it (no re-ranking).
 #
-# Measured bracket by bracket where Receita publishes items by total-income
-# bracket (AC2019, 2020, 2022, 2023). In the other years (2007-2018 and 2021,
-# whose item table ranks by taxable income) each item's national total is
+# Measured from Receita's item-by-bracket tables (AC2019, 2020, 2022, 2023).
+# Those tables do not group filers by total income, so the items they put in
+# a top group understate the items of the top group by total income: measured
+# s1 is a lower bound. AC2007-2018 have only national item totals, and 2021's
+# item table ranks by taxable income; there each item's national total is
 # multiplied by its top-p concentration measured in 2019, 2020 and 2022.
+# Two known gaps, not adjusted: in AC2016-2017 part of the exempt total is in
+# no listed item (probably small-value capital gains), and before AC2010
+# bonus shares have no line of their own.
 # Top-group income and items use the same floor convention: brackets ranked
 # from the top, the bracket straddling p counted pro rata at its average.
 # 2000, 2002 and 2006 come from a file without item detail; they take the
@@ -95,7 +100,9 @@ bra_nonincome_shares <- function(p_grid,
     if (grepl("mea", s, fixed = TRUE) && has(c("div", "dissolu"))) return("divorce")
     if (has(c("ganho cap", "ganhos cap", "gcap", "renda variável", "renda_variavel",
               "lucro na alienação", "alienacao", "recuperação de prejuízos",
-              "recup_prejuizo", "ganhos líquidos", "ganhos líq", "ganho de capital")))
+              "recup_prejuizo", "ganhos líquidos", "ganhos líq", "ganho de capital")) ||
+        s %in% c("rend_isento_ganho_capital_ouro", "rend_isento_ganho_liquido_acao",
+                 "rend_isento_total_bens_pequeno_valor"))
       return("capital gains")
     if (has("bonif")) return("bonus shares")
     if (has(c("apólice", "peculio", "pecúlio"))) return("insurance")

@@ -20,11 +20,19 @@
 # tabulations (CRI, MEX), which 02c loads without gpinter. thr is the average
 # of the straddling group, an approximation that nothing downstream uses.
 #
-# Three DGII cells are patched; the same typos are in DGII's own PDF:
-#   2013 diversas bracket 2: renta imponible is 14 times its gross -> gross
-#        times the 2012/2014 bracket-2 ratio;
-#   2006 and 2015 wage bracket 10: impossible gross -> its renta imponible.
-# 2008 and 2011 stay out, as before: no denominator exists for them.
+# Four DGII cells are patched; all four are inside DGII's printed totals:
+#   2013 diversas bracket 2: renta imponible is 14 times its gross (the same
+#        in DGII's own PDF) -> gross times the 2012/2014 bracket-2 ratio;
+#   2009 diversas bracket 4: renta imponible exceeds its gross, and the tax
+#        fits a lower base -> gross times the 2007/2010 bracket-4 ratio;
+#   2006 and 2015 wage bracket 10: gross far above what DGII's own tax implies
+#        (8 people with $196m, 1 person with $171m) -> its renta imponible.
+#        Three smaller wage cells of the same kind (2000, 2005, 2007) move the
+#        top 1% by under 1% and are left as they are.
+# 2008 and 2011 stay out, as before: no denominator exists for them. 2018 is
+# in the file but was not in the series before; adding it is a data update.
+# Rows below the filers' reach (top groups larger than all filers) are not
+# written, so 03a never treats a group of non-filers as observed.
 #
 # Decided with the coauthors on 2026-10-14; see results_v2.tex, last section.
 ###############################################################################
@@ -70,12 +78,16 @@ tab <- bind_rows(lapply(SLV_YEARS, read_slv_year)) %>%
   mutate(across(c(a_n, a_gross, a_net, d_n, d_gross, d_net), ~ coalesce(.x, 0)))
 
 # ---- DGII typos ---------------------------------------------------------------
-r2 <- tab %>%
-  filter(tramo == 2, year %in% c(2012, 2014)) %>%
+ratio <- function(tr, yrs) tab %>%
+  filter(tramo == tr, year %in% yrs) %>%
   summarise(r = mean(d_net / d_gross)) %>%
   pull(r)
+r2 <- ratio(2, c(2012, 2014))
+r4 <- ratio(4, c(2007, 2010))
 tab <- tab %>%
-  mutate(d_net   = if_else(year == 2013 & tramo == 2, d_gross * r2, d_net),
+  mutate(d_net   = case_when(year == 2013 & tramo == 2 ~ d_gross * r2,
+                             year == 2009 & tramo == 4 ~ d_gross * r4,
+                             TRUE ~ d_net),
          a_gross = if_else(year %in% c(2006, 2015) & tramo == 10, a_net, a_gross))
 
 # ---- pooled groups and top-group income ---------------------------------------
@@ -109,9 +121,20 @@ top_groups <- groups %>%
                               (topinc - lead(topinc)) / ((lead(p) - p) * adults))) %>%
   ungroup()
 
+# coverage: filers as a share of adults; top groups larger than that are not observed
+coverage <- groups %>%
+  group_by(year) %>%
+  summarise(filers = sum(n), adults = first(adults), .groups = "drop") %>%
+  mutate(coverage = filers / adults)
+top_groups <- top_groups %>%
+  inner_join(coverage %>% select(year, coverage), by = "year") %>%
+  filter(1 - p <= coverage + 1e-12)
+
 if (!dir.exists(SLV_OUT)) dir.create(SLV_OUT, recursive = TRUE)
+unlink(list.files(SLV_OUT, pattern = "^total-pre-SLV-[0-9]{4}\\.xlsx$", full.names = TRUE))
 for (y in SLV_YEARS) {
   write_xlsx(top_groups %>% filter(year == y) %>% select(p, thr, bracketavg, topavg),
              file.path(SLV_OUT, paste0("total-pre-SLV-", y, ".xlsx")))
 }
+write.csv(coverage %>% select(year, coverage), file.path(SLV_OUT, "coverage-SLV.csv"), row.names = FALSE)
 message("SLV: wrote ", length(SLV_YEARS), " years to ", SLV_OUT)

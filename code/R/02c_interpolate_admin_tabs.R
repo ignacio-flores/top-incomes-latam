@@ -36,13 +36,16 @@ countries1 <- map_dfr(ctries, gpinterize_country, .id = "country")
 #      declarations in two: a share J_SPLIT of top income is on joint returns,
 #      and with a Pareto tail (a = b / (b - 1)) splitting them scales top-group
 #      income by ((1 - J) + J * 2^(1 - a))^(1 / a).
-# DOM: subtract the lump sums and, in 2012-2016, the missing cost of sales
-#      (dom_corrections.R).
+# DOM: remove the lump sums and, in 2012-2016, the missing cost of sales, as a
+#      share of each top group's income (dom_corrections.R).
+# Both are measured on DGII/Receita brackets, so above p99.9 the corrected
+# detailed.csv grid is not a smooth distribution (slices between grid points
+# can be non-monotone); the four published fractiles are.
 J_SPLIT <- 0.144  # Receita GN AC2021-24 (Tab2 by declaration type, Tab8 items)
 bra_s1 <- bra_nonincome_shares(p_grid) %>%
   transmute(country = "BRA", year, p = round(p, 6), s1)
 dom_rm <- dom_corrections(p_grid) %>%
-  transmute(country = "DOM", year, p = round(p, 6), remove, dom_adults = adults)
+  transmute(country = "DOM", year, p = round(p, 6), dom_share = remove / floor_inc)
 countries1 <- countries1 %>%
   mutate(p = round(p, 6)) %>%
   left_join(bra_s1, by = c("country", "year", "p")) %>%
@@ -51,12 +54,18 @@ countries1 <- countries1 %>%
          topavg = case_when(
            country == "BRA" ~ topavg * (1 - s1) *
              ((1 - J_SPLIT) + J_SPLIT * 2^(1 - a))^(1 / a),
-           country == "DOM" ~ topavg - remove / ((1 - p) * dom_adults),
+           country == "DOM" ~ topavg * (1 - dom_share),
            TRUE ~ topavg))
+grp_falls <- countries1 %>%
+  filter(country %in% c("BRA", "DOM")) %>%
+  arrange(country, year, p) %>%
+  group_by(country, year) %>%
+  summarise(ok = all(diff(topavg * (1 - p)) < 0), .groups = "drop")
 stopifnot(!anyNA(countries1$topavg[countries1$country %in% c("BRA", "DOM")]),
           all(countries1$b[countries1$country == "BRA"] > 1),
-          all(countries1$topavg > 0, na.rm = TRUE))
-countries1 <- countries1 %>% select(-c(b, a, s1, remove, dom_adults))
+          all(countries1$topavg > 0, na.rm = TRUE),
+          all(grp_falls$ok))   # top-group income still falls as the group narrows
+countries1 <- countries1 %>% select(-c(b, a, s1, dom_share))
 
 #define function for other countries (microdata)
 load_other_tabs <- function(ctry, path, pattern) {
