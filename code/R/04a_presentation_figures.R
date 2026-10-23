@@ -6,8 +6,9 @@
 #   ours:   intermediary_data/top_income_df.csv (p = 0.99, in_coverage)
 #   theirs: distribuciones jan2024 panel, unit = "esn" (equal-split adults)
 #
-# Everything is a ratio within a country-year, so currency and price base
-# cancel and nothing needs converting:
+# G1-G5 are ratios within a country-year, so currency and price base cancel
+# and nothing needs converting (the levels figures convert to 2020 USD and
+# G6 plots 03e's real index):
 #   our top-1% income per adult     = topavg * (1 - p)    (topavg x 1% of adults / adults)
 #   our denominator per adult       = denom_total / pop   (pop = WID adults)
 #   their top-1% income per adult   = inc_sh(t1) * average(tot)
@@ -21,8 +22,10 @@
 #   pres_top1_income_ladder.pdf  G1  top-1% income per adult, relative to the survey
 #   pres_top1_share_ladder.pdf   G2  top-1% shares: ours (Broad, Narrow) and the DINA ladder
 #   pres_dina_gap.pdf            G3  DINA / ours: top-1% income vs denominator
-#   pres_dina_notax.pdf          G4  share of DINA's top-1% income that no tax return has
+#   pres_dina_notax.pdf          G4  share of DINA's top-1% income outside tax returns
 #   pres_tax_vs_bfm.pdf          G5  tax / BFM_all top-1% income (appendix)
+#   pres_levels_<ISO>.pdf            average income of a top-1% adult and denominator per
+#                                    adult, 2020 USD, as in 03d (appendix, section 8)
 #   pres_trends_main.pdf         G6  top 1% income against survey income and the BFM
 #                                    denominator, indexed (03e): Brazil, Colombia, Chile, Uruguay
 #   pres_trends_years.pdf        G6  the same four, with the years that have tax data marked
@@ -326,7 +329,7 @@ save_pres(g3, "pres_dina_gap.pdf")
 # 6. G4 - DINA'S TOP 1%: INCOME NO TAX RETURN HAS
 # Composition of the top 1%'s income in DINA (step nat, group t1): the *_sh
 # components sum to one. Undistributed profits, net taxes on production,
-# imputed rent and the residual appear on no tax return. Same years as G3.
+# imputed rent and the residual are income outside tax returns. Same years as G3.
 ###############################################
 
 comp_labels <- c("upr_sh"  = "Undistributed profits",
