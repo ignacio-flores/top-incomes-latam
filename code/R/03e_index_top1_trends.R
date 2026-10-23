@@ -10,10 +10,11 @@
 #   Survey income       = distribuciones raw average x WID adults
 #   BFM denominator     = distribuciones bfm average x WID adults   (as in 03a)
 #
-# Two versions: totals, and per adult (each total divided by WID adults, so
-# the top 1% average / 100 and the two distribuciones averages). Every source
-# is in nominal local currency and is deflated with the WID price index, as in
-# 03b and 03d. An exchange rate would cancel in an index, so none is used.
+# Two versions: totals, and per adult: the average income of a top-1% adult
+# for the tax line and of all adults for the other two (the top 1%'s income
+# over all adults would give the same index). Every source is in nominal
+# local currency and is deflated with the WID price index, as in 03b and 03d.
+# An exchange rate would cancel in an index, so none is used.
 #
 # BASE YEAR: the first year of the tax series. If distribuciones has no
 # survey that year but has one on each side (CHL 2005, MEX 2009), its value
@@ -124,10 +125,12 @@ stopifnot(!anyDuplicated(dist[c("country", "year", "series")]))
 # 2. REAL SERIES, TOTALS AND PER ADULT
 ###############################################
 
+# avg: the group's average income; group_share: the group's share of adults
 levels_long <- bind_rows(
     tax  %>% transmute(country, year, series = "Top 1% income (tax)",
-                       per_adult = topavg * (1 - P_TARGET), pop),
-    dist %>% mutate(pop = NA_real_)
+                       avg = topavg, group_share = 1 - P_TARGET, pop),
+    dist %>% transmute(country, year, series,
+                       avg = per_adult, group_share = 1, pop = NA_real_)
   ) %>%
   left_join(adults, by = c("country", "year")) %>%
   left_join(priceindex, by = c("country", "year"))
@@ -137,8 +140,8 @@ stopifnot(!anyNA(levels_long$adults), !anyNA(levels_long$priceindex))
 with(filter(levels_long, !is.na(pop)), stopifnot(max(abs(pop / adults - 1)) < 1e-12))
 
 levels_long <- levels_long %>%
-  mutate(total     = per_adult * adults / priceindex,
-         per_adult = per_adult / priceindex) %>%
+  mutate(total     = avg * group_share * adults / priceindex,
+         per_adult = avg / priceindex) %>%
   select(country, year, series, total, per_adult) %>%
   pivot_longer(c(total, per_adult), names_to = "version", values_to = "value")
 
@@ -222,7 +225,8 @@ plot_index <- function(iso3, ver) {
 
   if (nrow(df) == 0) return(NULL)
 
-  what <- if (ver == "total") "Total income of each group" else "Income per adult"
+  what <- if (ver == "total") "Total income of each group" else
+    "Average income of a top-1% adult (tax) and of all adults (survey, BFM)"
   note <- if (b$base_year != b$tax_start) {
     sprintf("\nThe tax series starts in %d, before the first survey; the base is the first tax year with one.",
             b$tax_start)

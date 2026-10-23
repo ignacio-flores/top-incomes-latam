@@ -22,7 +22,11 @@
 #   pres_top1_share_ladder.pdf   G2  top-1% shares: ours (Broad, Narrow) and the DINA ladder
 #   pres_dina_gap.pdf            G3  DINA / ours: top-1% income vs denominator
 #   pres_dina_notax.pdf          G4  share of DINA's top-1% income that no tax return has
-#   pres_tax_vs_bfm.pdf          G5  tax / BFM_all top-1% income (backup)
+#   pres_tax_vs_bfm.pdf          G5  tax / BFM_all top-1% income (appendix)
+#   pres_trends_main.pdf         G6  top 1% income against survey income and the BFM
+#                                    denominator, indexed (03e): Brazil, Colombia, Chile, Uruguay
+#   pres_trends_years.pdf        G6  the same four, with the years that have tax data marked
+#   pres_trends_other.pdf        G6  the other six countries (appendix)
 ###############################################
 
 rm(list = ls())
@@ -376,7 +380,7 @@ g4 <- ggplot(g4_long, aes(x = sh, y = row, fill = item)) +
 save_pres(g4, "pres_dina_notax.pdf")
 
 ###############################################
-# 7. G5 (BACKUP) - TAX / BFM_all TOP-1% INCOME
+# 7. G5 (APPENDIX) - TAX / BFM_all TOP-1% INCOME
 # Same denominator per adult (our BFM denominator is their bfm average), so
 # this ratio is also our BFM-denominator share over BFM_all's share.
 ###############################################
@@ -402,7 +406,7 @@ g5 <- ggplot(g5_data, aes(y = row)) +
 save_pres(g5, "pres_tax_vs_bfm.pdf")
 
 ###############################################
-# 8. BACKUP - TOP-1% INCOME AND DENOMINATOR PER ADULT, BY COUNTRY
+# 8. APPENDIX - TOP-1% INCOME AND DENOMINATOR PER ADULT, BY COUNTRY
 # Levels in 2020 USD per adult, converted as 03b section 3.3 and 03d section 1:
 #   conv = (PI_2020 / PI_year) / ner_2020.
 # All ten countries. Our BFM denominator per adult equals the BFM_all average
@@ -483,7 +487,103 @@ for (iso in COUNTRIES) save_pres(plot_levels(iso), paste0("pres_levels_", iso, "
                                      width = 10, height = 4.6)
 
 ###############################################
-# 9. NUMBERS FOR THE SLIDES
+# 9. G6 - TRENDS: TOP 1% INCOME AGAINST SURVEY INCOME AND THE BFM DENOMINATOR
+# 03e's index, per adult version (output/tables/index_top1_trends.csv, so run
+# 03e first): the average income of a top-1% adult (tax) and of all adults
+# (survey, BFM), in real terms, each country's base year = 100. Four countries
+# on the slide, the other six in the appendix, and the four again with the
+# years that have tax data marked.
+###############################################
+
+PATH_INDEX <- file.path(PATH_TABLES, "index_top1_trends.csv")
+if (!file.exists(PATH_INDEX)) stop("Run 03e first: ", PATH_INDEX)
+
+TRENDS_MAIN  <- c("BRA", "COL", "CHL", "URY")
+TRENDS_OTHER <- setdiff(COUNTRIES, TRENDS_MAIN)
+
+# 03e's three series, in the colours, line types and shapes of the other figures
+tr_series <- c("Top 1% income (tax)", "Survey income", "BFM denominator")
+tr_colors <- setNames(unname(series_colors[c("Tax", "Survey", "BFM_all")]), tr_series)
+tr_shapes <- setNames(unname(series_shapes[c("Tax", "Survey", "BFM_all")]), tr_series)
+tr_lines  <- setNames(c("solid", "dotted", "longdash"), tr_series)
+
+trends <- read_csv(PATH_INDEX, show_col_types = FALSE) %>%
+  filter(version == "per_adult") %>%
+  mutate(series = factor(series, levels = tr_series))
+stopifnot(setequal(unique(trends$country), COUNTRIES), !anyNA(trends$series),
+          all(count(distinct(trends, country, base_year), country)$n == 1))
+
+tr_base <- distinct(trends, country, base_year)
+tr_strip <- setNames(sprintf("%s, %d = 100", country_labels[tr_base$country], tr_base$base_year),
+                     tr_base$country)
+tr_panel <- function(df, isos) {
+  mutate(df, panel = factor(country, levels = isos, labels = unname(tr_strip[isos])))
+}
+
+# each run of consecutive tax years, as a band from half a year before its first year
+# to half a year after its last
+tr_bands <- trends %>%
+  filter(series == tr_series[1]) %>%
+  distinct(country, year) %>%
+  arrange(country, year) %>%
+  group_by(country) %>%
+  mutate(run = cumsum(c(1, diff(year) != 1))) %>%
+  group_by(country, run) %>%
+  summarise(xmin = min(year) - 0.5, xmax = max(year) + 0.5, .groups = "drop")
+
+plot_trends <- function(isos, ncol, bands = FALSE, base_size = 18) {
+  df <- trends %>% filter(country %in% isos) %>% tr_panel(isos)
+  g <- ggplot(df, aes(x = year, y = index))
+  if (bands) {
+    g <- g +
+      geom_rect(data = tr_bands %>% filter(country %in% isos) %>% tr_panel(isos),
+                aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = "Years with tax data"),
+                inherit.aes = FALSE) +
+      scale_fill_manual(values = c("Years with tax data" = alpha(tr_colors[[1]], 0.13)))
+  }
+  g +
+    geom_hline(yintercept = 100, colour = "grey55", linewidth = 0.4) +
+    geom_vline(data = distinct(df, panel, base_year), aes(xintercept = base_year),
+               colour = "grey60", linewidth = 0.4, linetype = "dashed") +
+    geom_line(aes(colour = series, linetype = series), linewidth = 0.8) +
+    geom_point(aes(colour = series, shape = series), size = 2) +
+    facet_wrap(~ panel, ncol = ncol) +
+    scale_colour_manual(values = tr_colors) +
+    scale_shape_manual(values = tr_shapes) +
+    scale_linetype_manual(values = tr_lines) +
+    scale_x_continuous(breaks = seq(2000, 2020, 5)) +
+    scale_y_continuous(breaks = seq(0, 300, 25)) +
+    labs(x = NULL, y = "Real average income, index") +
+    guides(colour = guide_legend(order = 1), shape = guide_legend(order = 1),
+           linetype = guide_legend(order = 1), fill = guide_legend(order = 2)) +
+    theme_deck(base_size = base_size) +
+    theme(strip.text = element_text(face = "bold", hjust = 0, colour = "grey20"),
+          panel.spacing = unit(1.2, "lines"),
+          legend.box = "vertical", legend.box.just = "left",
+          legend.spacing.y = unit(0.15, "lines"))
+}
+
+save_pres(plot_trends(TRENDS_MAIN, ncol = 2), "pres_trends_main.pdf", width = 9.6, height = 5.4)
+save_pres(plot_trends(TRENDS_MAIN, ncol = 2, bands = TRUE), "pres_trends_years.pdf",
+          width = 6.6, height = 5.6)
+save_pres(plot_trends(TRENDS_OTHER, ncol = 3), "pres_trends_other.pdf", width = 10.4, height = 5.4)
+
+# For the record: top 1% income index over the survey and BFM indices in the last
+# year all three have, and the years each side covers
+g6_data <- trends %>%
+  select(country, year, series, index, base_year) %>%
+  pivot_wider(names_from = series, values_from = index) %>%
+  rename(tax = `Top 1% income (tax)`, survey = `Survey income`, bfm = `BFM denominator`) %>%
+  group_by(country) %>%
+  summarise(period = period_label(year[!is.na(tax)]), n_years = sum(!is.na(tax)),
+            base_year = first(base_year),
+            bfm_period = period_label(year[!is.na(bfm)]), bfm_years = sum(!is.na(bfm)),
+            last_common = max(year[!is.na(tax) & !is.na(survey) & !is.na(bfm)]),
+            vs_survey = (tax / survey)[year == last_common],
+            vs_bfm = (tax / bfm)[year == last_common], .groups = "drop")
+
+###############################################
+# 10. NUMBERS FOR THE SLIDES
 ###############################################
 
 summary_rows <- bind_rows(
@@ -500,7 +600,10 @@ summary_rows <- bind_rows(
   g4_data %>% transmute(figure = "G4", country, period, n_years, no_return,
                         upr = upr_sh, indg = indg_sh, imp = imp_sh, lef = lef_sh),
   g5_data %>% transmute(figure = "G5", country, period, n_years, tax = mean,
-                        note = sprintf("range %.2f-%.2f; below 1 in %d years", lo, hi, below_one))
+                        note = sprintf("range %.2f-%.2f; below 1 in %d years", lo, hi, below_one)),
+  g6_data %>% transmute(figure = "G6", country, period, n_years, raw = vs_survey, bfm = vs_bfm,
+                        note = sprintf("%d = 100; raw, bfm: tax index over survey, BFM index in %d; BFM %s (%d years)",
+                                       base_year, last_common, bfm_period, bfm_years))
 )
 write_csv(summary_rows, file.path(PATH_TABLES, "presentation_numbers.csv"))
 message("Wrote: ", file.path(PATH_TABLES, "presentation_numbers.csv"))

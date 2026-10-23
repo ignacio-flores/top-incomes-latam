@@ -5,8 +5,10 @@
 # A top share is a ratio. When ours comes out above a distribuciones series,
 # it is because our numerator is larger, our denominator is smaller, or both.
 # The share figures in 03c cannot separate those. This script puts numerator
-# and denominator side by side in levels, in 2020 USD per adult, for every
-# country (the table: Brazil, Colombia and El Salvador, flagged by the coauthors).
+# and denominator side by side in levels, in 2020 USD, for every country (the
+# table: Brazil, Colombia and El Salvador, flagged by the coauthors). The
+# denominator figures show income per adult; the numerator figures show the
+# average income of a top-1% adult (the numerator over 1% of adults).
 #
 # WHAT IS COMPARABLE WITH WHAT
 #
@@ -198,6 +200,7 @@ to_usd_pa <- function(df) {
     inner_join(conv, by = c("country", "year")) %>%
     mutate(denom_pa = denom_total / adults * conv,
            num_pa   = num_total   / adults * conv,
+           top1_avg = num_pa * 100,   # numerator over 1% of adults: the average top-1% adult
            share    = num_total / denom_total)
 }
 
@@ -210,8 +213,8 @@ bench_panelled <- theirs_pa %>%
   crossing(denom_label = panels)
 
 decomp <- bind_rows(
-    ours_pa   %>% select(country, year, series, denom_label, denom_pa, num_pa, share),
-    bench_panelled %>% select(country, year, series, denom_label, denom_pa, num_pa, share)
+    ours_pa   %>% select(country, year, series, denom_label, denom_pa, num_pa, top1_avg, share),
+    bench_panelled %>% select(country, year, series, denom_label, denom_pa, num_pa, top1_avg, share)
   ) %>%
   mutate(
     denom_label = factor(denom_label, levels = panels),
@@ -311,7 +314,7 @@ theme_decomp <- function() {
 plot_decomp <- function(iso3, which = c("denom", "num")) {
 
   which <- match.arg(which)
-  value_col <- if (which == "denom") "denom_pa" else "num_pa"
+  value_col <- if (which == "denom") "denom_pa" else "top1_avg"
 
   df <- decomp %>%
     filter(country == iso3, !is.na(.data[[value_col]])) %>%
@@ -322,8 +325,8 @@ plot_decomp <- function(iso3, which = c("denom", "num")) {
   subtitle <- if (which == "denom") {
     "Total income per adult, the denominator of the top 1% share"
   } else {
-    paste0("Top 1% income per adult, the numerator of the top 1% share. ",
-           "Our line is identical across panels;\nthe panels differ only in which years have a denominator.")
+    paste0("Average income of a top-1% adult: the numerator of the top 1% share over 1% of adults. ",
+           "Our line is identical\nacross panels; the panels differ only in which years have a denominator.")
   }
 
   ggplot(df, aes(x = year, y = value,
@@ -339,7 +342,7 @@ plot_decomp <- function(iso3, which = c("denom", "num")) {
                        minor_breaks = NULL,
                        expand = expansion(mult = c(0.02, 0.02))) +
     labs(x = "Year",
-         y = "2020 USD per adult",
+         y = if (which == "denom") "2020 USD per adult" else "2020 USD per top-1% adult",
          title = country_labels[[iso3]],
          subtitle = subtitle,
          color = NULL, linetype = NULL, shape = NULL) +
