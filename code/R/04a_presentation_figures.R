@@ -406,9 +406,12 @@ g5 <- ggplot(g5_data, aes(y = row)) +
 save_pres(g5, "pres_tax_vs_bfm.pdf")
 
 ###############################################
-# 8. APPENDIX - TOP-1% INCOME AND DENOMINATOR PER ADULT, BY COUNTRY
-# Levels in 2020 USD per adult, converted as 03b section 3.3 and 03d section 1:
+# 8. APPENDIX - TOP-1% AVERAGE INCOME AND DENOMINATOR PER ADULT, BY COUNTRY
+# Levels in 2020 USD, converted as 03b section 3.3 and 03d section 1:
 #   conv = (PI_2020 / PI_year) / ner_2020.
+# Numerator panel: the average income of a top-1% adult, as in 03d and 03e,
+# i.e. the numerator per adult x 100: topavg for tax, sh x avg x 100 for
+# theirs. Denominator panel: income per adult.
 # All ten countries. Our BFM denominator per adult equals the BFM_all average
 # (03d asserts it), so it is drawn once, as BFM_all.
 ###############################################
@@ -438,14 +441,14 @@ theirs_all <- inner_join(
     by = c("country", "year", "step")) %>%
   mutate(series = unname(BENCH_STEPS[step]))
 
-panel_labels <- c("Numerator: top-1% income per adult", "Denominator per adult")
+panel_labels <- c("Average income of a top-1% adult", "Denominator per adult")
 
 levels_df <- bind_rows(
     ours_all %>%
       distinct(country, year, .keep_all = TRUE) %>%
-      transmute(country, year, series = "Tax", value = topavg * (1 - P_TARGET), panel = panel_labels[1]),
+      transmute(country, year, series = "Tax", value = topavg, panel = panel_labels[1]),
     theirs_all %>%
-      transmute(country, year, series, value = sh * avg, panel = panel_labels[1]),
+      transmute(country, year, series, value = sh * avg * 100, panel = panel_labels[1]),
     ours_all %>%
       filter(!is.na(denom_total), denom_concept %in% c("upper", "middle")) %>%
       distinct(country, year, denom_concept, .keep_all = TRUE) %>%
