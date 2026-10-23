@@ -28,7 +28,7 @@
 #                                    adult, 2020 USD, as in 03d (appendix, section 8)
 #   pres_trends_main.pdf         G6  top 1% income against survey income and the BFM
 #                                    denominator, indexed (03e): Brazil, Colombia, Chile, Uruguay
-#   pres_trends_years.pdf        G6  the same four, with the years that have tax data marked
+#   pres_trends_years.pdf        G6  all ten, with the years that have tax data marked
 #   pres_trends_other.pdf        G6  the other six countries (appendix)
 ###############################################
 
@@ -497,8 +497,8 @@ for (iso in COUNTRIES) save_pres(plot_levels(iso), paste0("pres_levels_", iso, "
 # 03e's index, per adult version (output/tables/index_top1_trends.csv, so run
 # 03e first): the average income of a top-1% adult (tax) and of all adults
 # (survey, BFM), in real terms, each country's base year = 100. Four countries
-# on the slide, the other six in the appendix, and the four again with the
-# years that have tax data marked.
+# on the slide, the other six in the appendix, and all ten with the years that
+# have tax data marked, most years first.
 ###############################################
 
 PATH_INDEX <- file.path(PATH_TABLES, "index_top1_trends.csv")
@@ -522,8 +522,8 @@ stopifnot(setequal(unique(trends$country), COUNTRIES), !anyNA(trends$series),
 tr_base <- distinct(trends, country, base_year)
 tr_strip <- setNames(sprintf("%s, %d = 100", country_labels[tr_base$country], tr_base$base_year),
                      tr_base$country)
-tr_panel <- function(df, isos) {
-  mutate(df, panel = factor(country, levels = isos, labels = unname(tr_strip[isos])))
+tr_panel <- function(df, isos, strip = tr_strip) {
+  mutate(df, panel = factor(country, levels = isos, labels = unname(strip[isos])))
 }
 
 # each run of consecutive tax years, as a band from half a year before its first year
@@ -537,15 +537,17 @@ tr_bands <- trends %>%
   group_by(country, run) %>%
   summarise(xmin = min(year) - 0.5, xmax = max(year) + 0.5, .groups = "drop")
 
-plot_trends <- function(isos, ncol, bands = FALSE, base_size = 18) {
-  df <- trends %>% filter(country %in% isos) %>% tr_panel(isos)
+plot_trends <- function(isos, ncol, bands = FALSE, base_size = 18, strip = tr_strip,
+                        xbreaks = seq(2000, 2020, 5), ybreaks = seq(0, 300, 25),
+                        ylab = "Real average income, index") {
+  df <- trends %>% filter(country %in% isos) %>% tr_panel(isos, strip)
   g <- ggplot(df, aes(x = year, y = index))
   if (bands) {
     g <- g +
-      geom_rect(data = tr_bands %>% filter(country %in% isos) %>% tr_panel(isos),
+      geom_rect(data = tr_bands %>% filter(country %in% isos) %>% tr_panel(isos, strip),
                 aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = "Years with tax data"),
                 inherit.aes = FALSE) +
-      scale_fill_manual(values = c("Years with tax data" = alpha(tr_colors[[1]], 0.13)))
+      scale_fill_manual(values = c("Years with tax data" = alpha(tr_colors[[1]], 0.2)))
   }
   g +
     geom_hline(yintercept = 100, colour = "grey55", linewidth = 0.4) +
@@ -557,9 +559,9 @@ plot_trends <- function(isos, ncol, bands = FALSE, base_size = 18) {
     scale_colour_manual(values = tr_colors) +
     scale_shape_manual(values = tr_shapes) +
     scale_linetype_manual(values = tr_lines) +
-    scale_x_continuous(breaks = seq(2000, 2020, 5)) +
-    scale_y_continuous(breaks = seq(0, 300, 25)) +
-    labs(x = NULL, y = "Real average income, index") +
+    scale_x_continuous(breaks = xbreaks) +
+    scale_y_continuous(breaks = ybreaks) +
+    labs(x = NULL, y = ylab) +
     guides(colour = guide_legend(order = 1), shape = guide_legend(order = 1),
            linetype = guide_legend(order = 1), fill = guide_legend(order = 2)) +
     theme_deck(base_size = base_size) +
@@ -570,8 +572,17 @@ plot_trends <- function(isos, ncol, bands = FALSE, base_size = 18) {
 }
 
 save_pres(plot_trends(TRENDS_MAIN, ncol = 2), "pres_trends_main.pdf", width = 9.6, height = 5.4)
-save_pres(plot_trends(TRENDS_MAIN, ncol = 2, bands = TRUE), "pres_trends_years.pdf",
-          width = 6.6, height = 5.6)
+# All ten, the most years with tax data first; country names only, the dashed line marks
+# each base year
+tr_nyears <- trends %>%
+  filter(series == tr_series[1]) %>%
+  distinct(country, year) %>%
+  count(country, name = "n_tax")
+TRENDS_BY_YEARS <- tr_nyears %>% arrange(desc(n_tax), country_labels[country]) %>% pull(country)
+save_pres(plot_trends(TRENDS_BY_YEARS, ncol = 5, bands = TRUE, strip = country_labels,
+                      xbreaks = c(2000, 2010, 2020), ybreaks = seq(0, 300, 50),
+                      ylab = "Real average income, index (base year = 100)"),
+          "pres_trends_years.pdf", width = 11.8, height = 5.6)
 save_pres(plot_trends(TRENDS_OTHER, ncol = 3), "pres_trends_other.pdf", width = 10.4, height = 5.4)
 
 # For the record: top 1% income index over the survey and BFM indices in the last
